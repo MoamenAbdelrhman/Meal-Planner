@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Food Planner</string>
+    <string name="static_fragment">Static fragment</string>
+
+    <string name="default_client_id">1:144709281679:android:7b00d2b0ebdb484ce88dfa</string>
+    <string name="default_web_client_id" translatable="false">144709281679-qhg4pplir4prusa5752v8qjajt3qh4f6.apps.googleusercontent.com</string>
+    <string name="facebook_app_id">959386209177496</string>
+    <string name="auth_failed">Authentication failed. Please try again.</string>
+    <string name="google_sign_in_failed">Google Sign-In failed. Please try again.</string>
+    <string name="email_required">Email is required.</string>
+    <string name="invalid_email">Please enter a valid email address.</string>
+    <string name="password_required">Password is required.</string>
+    <string name="password_length">Password must be at least 6 characters long.</string>
+    <string name="login_successful">Login successful!</string>
+    <string name="email_not_registered">This email is not registered. Please sign up first.</string>
+    <string name="invalid_password">Incorrect email or  password. Please try again.</string>
+    <string name="welcome_new_user">Welcome! Please complete your registration.</string>
+    <string name="email_check_failed">Failed to check if the email is registered. Please try again.</string>
+    <string name="email_registered_with_password">This email is registered with Email/Password. Please log in with your email and password.</string>
+    <string name="google_link_failed">Failed to link Google account with your email. Please try again.</string>
+
+</resources>

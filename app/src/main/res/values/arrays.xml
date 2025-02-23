@@ -1,0 +1,29 @@
+<resources>
+    <string-array name="countries">
+        <item>🇪🇬 Egypt</item>
+        <item>🇸🇦 Saudi Arabia</item>
+        <item>🇦🇪 UAE</item>
+        <item>🇺🇸 USA</item>
+        <item>🇬🇧 UK</item>
+        <item>🇫🇷 France</item>
+        <item>🇩🇪 Germany</item>
+        <item>🇮🇳 India</item>
+        <item>🇨🇦 Canada</item>
+        <item>🇦🇺 Australia</item>
+        <item>🇯🇵 Japan</item>
+        <item>🇨🇳 China</item>
+        <item>🇷🇺 Russia</item>
+        <item>🇧🇷 Brazil</item>
+        <item>🇿🇦 South Africa</item>
+        <item>🇹🇷 Turkey</item>
+        <item>🇮🇹 Italy</item>
+        <item>🇪🇸 Spain</item>
+        <item>🇰🇷 South Korea</item>
+        <item>🇮🇩 Indonesia</item>
+        <item>🇵🇰 Pakistan</item>
+        <item>🇲🇾 Malaysia</item>
+        <item>🇹🇭 Thailand</item>
+        <item>🇳🇬 Nigeria</item>
+        <item>🇲🇽 Mexico</item>
+    </string-array>
+</resources>

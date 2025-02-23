@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".Fragments.SearchFragment"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp"
+        >
+
+        <!-- Search Bar -->
+        <EditText
+            android:id="@+id/searchBar"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:hint="Search for a meal..."
+            android:drawableStart="@drawable/search3"
+            android:background="@drawable/search_bar_bg"
+            android:padding="15dp"
+            android:drawablePadding="8dp"/>
+
+        <!-- Filter Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingTop="10dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            >
+
+            <Button
+                android:id="@+id/btnFilterCategory"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Category"
+                android:textColor="@color/black"
+                android:backgroundTint="@color/background"
+                app:strokeColor="@color/textColor"
+                app:strokeWidth="2dp"
+                app:cornerRadius="12dp"
+                />
+
+            <Button
+                android:id="@+id/btnFilterCountry"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Country"
+                android:textColor="@color/black"
+                android:backgroundTint="@color/background"
+                app:strokeColor="@color/textColor"
+                app:strokeWidth="2dp"
+                app:cornerRadius="12dp"
+                android:layout_marginEnd="12dp"
+                android:layout_marginStart="12dp"
+                />
+
+            <Button
+                android:id="@+id/btnFilterIngredient"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Ingredient"
+                android:textColor="@color/black"
+                android:backgroundTint="@color/background"
+                app:strokeColor="@color/textColor"
+                app:strokeWidth="2dp"
+                app:cornerRadius="12dp"/>
+
+        </LinearLayout>
+
+        <!-- Search Results (RecyclerView) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewSearchResults"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingTop="10dp"/>
+
+    </LinearLayout>
+
+
+</FrameLayout>
