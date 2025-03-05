@@ -18,5 +18,7 @@
     <string name="email_check_failed">Failed to check if the email is registered. Please try again.</string>
     <string name="email_registered_with_password">This email is registered with Email/Password. Please log in with your email and password.</string>
     <string name="google_link_failed">Failed to link Google account with your email. Please try again.</string>
+    <string name="drawer_closed">drawer closed</string>
+    <string name="drawer_opened">drawer opened</string>
 
 </resources>

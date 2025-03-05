@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:padding="16dp"
-    tools:context=".auth.LoginFragment"
+    tools:context=".auth.Login.view.LoginFragment"
     android:background="@color/background">
 
     <ScrollView
@@ -44,7 +44,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_margin="8dp"
-                android:text="Fill your details or continue with \n                social media"
+                android:text="Fill your details or continue with \n                google account"
                 android:textColor="#8F8F8F"
                 android:textSize="16sp" />
 
@@ -76,12 +76,14 @@
             <!-- Password Input -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/passwordInputLayout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 app:boxCornerRadiusBottomEnd="14dp"
                 app:boxCornerRadiusBottomStart="14dp"
                 app:boxCornerRadiusTopEnd="14dp"
+                app:endIconMode="password_toggle"
                 app:boxCornerRadiusTopStart="14dp"
                 android:textColorHint="@color/textColor"
                 app:boxStrokeColor="@color/textColor"
@@ -90,6 +92,7 @@
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/passwordEditText"
+                    style="@style/Widget.Material3.TextInputEditText.OutlinedBox.Dense"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Enter your password"

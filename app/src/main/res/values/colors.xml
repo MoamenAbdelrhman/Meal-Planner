@@ -9,6 +9,10 @@
     <color name="background">#f5f5f5</color>
     <color name="textColor">#a9a9a9</color>
     <color name="colorGray">#9E9E9E</color>
+    <color name="white_gray">#EBEBEB</color>
     <color name="colorPrimary">#6200EE</color>
     <color name="light_gray">#D3D3D3</color>
+    <color name="white_v2">#efefef</color>
+    <color name="blue">#165EF0</color>
+    <color name="gold">#e8b923</color>
 </resources>

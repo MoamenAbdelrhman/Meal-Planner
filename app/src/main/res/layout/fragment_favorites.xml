@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -10,34 +11,22 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="16dp"
-        >
-        <LinearLayout
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+        <!-- Title -->
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            >
-            <!-- Title -->
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="My Saved Meals"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                />
+            android:text="My Saved Meals"
+            android:textSize="26sp"
+            android:textStyle="bold" />
 
-            <ImageButton
-                android:id="@+id/menuButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="left"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/mydots32" />
 
-        </LinearLayout>
-        <!-- Category Selector -->
+        <!--
+         Category Selector
+
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -92,17 +81,20 @@
             </LinearLayout>
         </HorizontalScrollView>
 
+        -->
+
         <!-- Recipe Grid -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewFavorites"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingTop="10dp"
+            android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
+            android:clipToPadding="false"
             android:numColumns="2"
-            android:scrollbars="vertical"
-            android:clipToPadding="false"/>
+            android:paddingTop="10dp"
+            android:scrollbars="vertical" />
 
     </LinearLayout>
 
-</FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

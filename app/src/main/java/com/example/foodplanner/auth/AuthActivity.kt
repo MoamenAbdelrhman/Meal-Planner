@@ -1,5 +1,6 @@
 package com.example.foodplanner.auth
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -8,12 +9,12 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.example.foodplanner.R
+import com.example.foodplanner.auth.Login.view.LoginFragment
+import com.example.foodplanner.main.view.MainActivity
 import com.google.firebase.auth.FirebaseAuth
 
 class AuthActivity : AppCompatActivity() {
 
-    private lateinit var loginFragment: LoginFragment
-    private lateinit var fragmentManager: FragmentManager
     private lateinit var auth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,26 +31,47 @@ class AuthActivity : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
 
 
-        fragmentManager = supportFragmentManager
-
-        loadFragment(LoginFragment())
+        // Check if user is already logged in
+        if (auth.currentUser != null) {
+            navigateToMainScreen()
+        } else {
+            loadFragment(LoginFragment())
+        }
     }
-    fun loadFragment(fragment: Fragment) {
+
+    private fun loadFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragmentContainer, fragment)
             .commit()
     }
 
-    // Function to navigate to SignupFragment
+    /**
+     * Navigate to the main activity if the user is logged in.
+     */
+    private fun navigateToMainScreen() {
+        val intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
+        finish()
+    }
+
+    /**
+     * Navigate to SignupFragment.
+     */
     fun navigateToSignup() {
         loadFragment(SignupFragment())
     }
 
-    // Function to navigate to LoginFragment
+    /**
+     * Navigate to LoginFragment.
+     */
+
     fun navigateToLogin() {
         loadFragment(LoginFragment())
     }
-    // Function to navigate to ForgetPassword
+
+    /**
+     * Navigate to ForgotPasswordFragment.
+     */
     fun navigateToForgetPassword() {
         loadFragment(ForgotPasswordFragment())
     }

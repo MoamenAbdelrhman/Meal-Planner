@@ -1,23 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/nav_home"
         android:icon="@drawable/home"
-        android:title="Home" />
+        android:title="Home"
+        app:showAsAction="ifRoom"/>
     <item
         android:id="@+id/nav_search"
         android:icon="@drawable/search"
-        android:title="Search" />
+        android:title="Search"
+        app:showAsAction="ifRoom"/>
     <item
         android:id="@+id/nav_favorites"
         android:icon="@drawable/heart"
-        android:title="Favorites" />
+        android:title="Favorites"
+        app:showAsAction="ifRoom"/>
     <item
         android:id="@+id/nav_meal_plan"
         android:icon="@drawable/planning"
-        android:title="Meal Plan" />
-    <item
-        android:id="@+id/nav_profile"
-        android:icon="@drawable/user"
-        android:title="Profile" />
+        android:title="Meal Plan"
+        app:showAsAction="ifRoom"/>
 </menu>

@@ -99,6 +99,7 @@
         app:boxCornerRadiusTopEnd="12dp"
         app:boxCornerRadiusBottomStart="12dp"
         app:boxCornerRadiusBottomEnd="12dp"
+        app:endIconMode="password_toggle"
         android:textColorHint="@color/textColor"
         app:boxStrokeColor="@color/textColor"
         app:boxStrokeWidth="1dp"
@@ -109,8 +110,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter your password"
-            android:inputType="textPassword"
-           />
+            android:inputType="textPassword" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Confirm Password Input -->
@@ -126,6 +126,7 @@
         app:boxCornerRadiusTopEnd="12dp"
         app:boxCornerRadiusBottomStart="12dp"
         app:boxCornerRadiusBottomEnd="12dp"
+        app:endIconMode="password_toggle"
         android:textColorHint="@color/textColor"
         app:boxStrokeColor="@color/textColor"
         app:boxStrokeWidth="1dp"
