@@ -44,7 +44,7 @@ interface UserRepository {
 
     suspend fun checkSubscriptionState(): Boolean
 
-    fun getCurrentUser(): FirebaseUser?
+    fun getCurrentUser(): User?
 
     suspend fun saveUserToLocalDatabase(user: User)
 

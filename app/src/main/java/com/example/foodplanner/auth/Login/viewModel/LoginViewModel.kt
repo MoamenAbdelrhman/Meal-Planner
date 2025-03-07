@@ -30,57 +30,16 @@ class LoginViewModel(
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
-    private val _isUserValid = MutableLiveData<ValidateCredentials?>()
-    val isUserValid: LiveData<ValidateCredentials?> = _isUserValid
-
-    fun checkUser(email: String, password: String) {
-        viewModelScope.launch {
-            val foundPassword = userRepository.getPassword(email)
-            when (foundPassword) {
-                null -> _isUserValid.value = ValidateCredentials.InValid("User not found")
-
-                else -> validateUser(password, foundPassword, email)
-            }
-        }
-    }
-    private suspend fun validateUser(password: String, hashedPassword: String, email: String) {
-        val isPasswordCorrect = PasswordUtil.checkPassword(password, hashedPassword)
-        when (isPasswordCorrect) {
-            true -> {
-                _isUserValid.value = ValidateCredentials.Valid
-                userRepository.logInUser(email)
-            }
-
-            false -> {
-                _isUserValid.value = ValidateCredentials.InValid("Incorrect Credentials")
-            }
-        }
-    }
-
-    fun resetStates() {
-        _isUserValid.value = null
-    }
-
     fun loginUser(email: String, password: String) {
         _isLoading.value = true
 
         viewModelScope.launch(Dispatchers.IO) {
-            val user = userRepository.getUserByEmail(email)
-            if (user != null) {
-                val isPasswordCorrect = PasswordUtil.checkPassword(password,
-                    user.password.toString()
-                )
-                if (isPasswordCorrect) {
-                    _loginSuccess.postValue(true)
-                    return@launch
-                }
-            }
-
             auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
                     _isLoading.value = false
                     if (task.isSuccessful) {
                         val firebaseUser = auth.currentUser
+                        _loginSuccess.value = true
                         if (firebaseUser != null) {
                             saveUserToRoom(firebaseUser)
                         }
@@ -123,18 +82,6 @@ class LoginViewModel(
                 userRepository.addUser(newUser)
             }
             _loginSuccess.postValue(true)
-        }
-    }
-
-    /** LOGIN USING ROOM DATABASE (OFFLINE MODE) **/
-    fun loginWithRoom(email: String, password: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val user = userRepository.getUserByEmail(email)
-            if (user != null) {
-                _loginSuccess.postValue(true)
-            } else {
-                _errorMessage.postValue("Invalid credentials. Please check your email or password.")
-            }
         }
     }
 

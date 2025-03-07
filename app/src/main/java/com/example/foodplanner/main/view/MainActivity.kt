@@ -2,21 +2,27 @@ package com.example.foodplanner.main.view
 
 import android.os.Bundle
 import android.content.Intent
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
+import androidx.room.Room
 import com.example.foodplanner.Fragments.FavoritesFragment
 import com.example.foodplanner.home.view.HomeFragment
 import com.example.foodplanner.Fragments.MealPlanFragment
@@ -25,6 +31,7 @@ import com.example.foodplanner.R
 import com.example.foodplanner.auth.AuthActivity
 import com.example.foodplanner.auth.AuthViewModel
 import com.example.foodplanner.auth.AuthViewModelFactory
+import com.example.foodplanner.auth.Login.view.LoginFragment
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase
@@ -41,6 +48,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.navigation.NavigationView.OnNavigationItemSelectedListener
 import com.google.firebase.FirebaseApp
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(), OnNavigationItemSelectedListener {
 
@@ -48,7 +56,7 @@ class MainActivity : AppCompatActivity(), OnNavigationItemSelectedListener {
 //    private lateinit var mGoogleSignInClient: GoogleSignInClient
 
     private lateinit var authViewModel: AuthViewModel
-
+    private lateinit var db: UserDatabase
     private lateinit var bottomNavigationView: BottomNavigationView
     private lateinit var drawer: DrawerLayout
     private lateinit var navigationView: NavigationView
@@ -59,14 +67,40 @@ class MainActivity : AppCompatActivity(), OnNavigationItemSelectedListener {
 
     private var navController: NavController? = null
 
+
+
     private val navOptions = NavOptions.Builder()
         .setEnterAnim(R.anim.slide_in_right)
         .setPopExitAnim(R.anim.slide_out_right)
         .build()
 
+    override fun onResume() {
+        super.onResume()
+        Log.d("TAG", "onResume Called")
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+
+
+        initUi()
+
+        Log.d("TAG", "onCreate Called")
+
+        /*db = Room.databaseBuilder(applicationContext, UserDatabase::class.java, "food-planner_database")
+            .allowMainThreadQueries() // يفضل استخدام Coroutines بدلاً من هذا
+            .build()
+
+        lifecycleScope.launch {
+            val userDao = db.userDao()
+            val user = userDao.getLoggedInUser() // استدعاء دالة معلّقة داخل Coroutine
+
+            if (user == null) {
+                startActivity(Intent(this@MainActivity, AuthActivity::class.java))
+                finish()
+            }
+        }*/
 
         val userRepository = UserRepositoryImpl(
             LocalDataSourceImpl(UserDatabase.getDatabaseInstance(this).userDao()),
@@ -75,63 +109,20 @@ class MainActivity : AppCompatActivity(), OnNavigationItemSelectedListener {
 
         val authViewModelFactory = AuthViewModelFactory(userRepository)
         authViewModel = ViewModelProvider(this, authViewModelFactory)[AuthViewModel::class.java]
+        authViewModel.checkUserLoggedIn()
+
         authViewModel.user.observe(this) { user ->
+            Log.d("AuthDebug", "User value: $user")
             if (user == null) {
+                Log.d("AuthDebug", "Navigating to AuthActivity")
                 startActivity(Intent(this, AuthActivity::class.java))
                 finish()
             } else {
-                // حفظ بيانات المستخدم في Room بعد تسجيل الدخول
+
                 authViewModel.saveUserToLocalDatabase(user)
+
             }
         }
-
-        initUi()
-/*
-
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        // Initialize Firebase
-        FirebaseApp.initializeApp(this)
-        // Initialize Firebase Auth
-        auth = FirebaseAuth.getInstance()
-
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id))
-            .requestEmail()
-            .build()
-
-
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
-
-        // Check if user is logged in
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
-            // If not logged in, redirect to LoginActivity
-            startActivity(Intent(this, AuthActivity::class.java))
-            finish()
-            return
-        }
-
-        loadFragment(HomeFragment())
-
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> loadFragment(HomeFragment())
-                R.id.nav_search -> loadFragment(SearchFragment())
-                R.id.nav_favorites -> loadFragment(FavoritesFragment())
-                R.id.nav_meal_plan -> loadFragment(MealPlanFragment())
-            }
-            true
-        }
-*/
-
-        /* // Logout Button
-        val logoutButton = findViewById<Button>(R.id.logoutButton)
-        logoutButton.setOnClickListener {
-            mGoogleSignInClient.signOut()
-            auth.signOut()
-            startActivity(Intent(this, AuthActivity::class.java))
-            finish()
-        }*/
 
     }
 
@@ -272,4 +263,57 @@ class MainActivity : AppCompatActivity(), OnNavigationItemSelectedListener {
             }
         }
     }
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("TAG", "onDestroy Called")
+    }
 }
+
+
+
+/*
+
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        // Initialize Firebase
+        FirebaseApp.initializeApp(this)
+        // Initialize Firebase Auth
+        auth = FirebaseAuth.getInstance()
+
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+
+
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
+
+        // Check if user is logged in
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            // If not logged in, redirect to LoginActivity
+            startActivity(Intent(this, AuthActivity::class.java))
+            finish()
+            return
+        }
+
+        loadFragment(HomeFragment())
+
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> loadFragment(HomeFragment())
+                R.id.nav_search -> loadFragment(SearchFragment())
+                R.id.nav_favorites -> loadFragment(FavoritesFragment())
+                R.id.nav_meal_plan -> loadFragment(MealPlanFragment())
+            }
+            true
+        }
+*/
+
+/* // Logout Button
+val logoutButton = findViewById<Button>(R.id.logoutButton)
+logoutButton.setOnClickListener {
+    mGoogleSignInClient.signOut()
+    auth.signOut()
+    startActivity(Intent(this, AuthActivity::class.java))
+    finish()
+}*/

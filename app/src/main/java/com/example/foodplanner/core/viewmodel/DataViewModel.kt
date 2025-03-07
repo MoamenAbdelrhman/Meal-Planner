@@ -112,6 +112,7 @@ class DataViewModel(
 
     fun updateSearchCategory(category: String?) {
         _categorySearch.value = category
+        Log.d("DataViewModel", "Updated search category: $category")
     }
 
     fun updateMainCuisine(cuisine: String?) {

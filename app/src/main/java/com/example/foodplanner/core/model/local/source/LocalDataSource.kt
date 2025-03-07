@@ -37,8 +37,11 @@ interface LocalDataSource {
     suspend fun checkSubscriptionState(): Boolean
 
     suspend fun deleteUserByEmail(email: String)
+
     suspend fun updateUser(user: User)
+
     suspend fun getPasswordByEmail(email: String): String?
+
     suspend fun insertUser(user: User)
 
 }

@@ -14,13 +14,15 @@
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="33dp">
 
                         <androidx.fragment.app.FragmentContainerView
                             android:id="@+id/nav_host_fragment"
                             android:name="androidx.navigation.fragment.NavHostFragment"
                             android:layout_width="match_parent"
                             android:layout_height="0dp"
+
                             app:defaultNavHost="true"
                             app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -49,6 +51,7 @@
             android:id="@+id/navigation_view"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
+            android:layout_marginTop="33dp"
             android:layout_gravity="start"
             android:background="@color/white"
             android:fitsSystemWindows="true"

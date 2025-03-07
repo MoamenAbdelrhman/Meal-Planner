@@ -27,4 +27,9 @@ class MealRepositoryImpl(
 
     override suspend fun getMealById(id: String) = remoteGsonDataSource.getMealById(id)
 
+    override suspend fun getAllCuisines(): List<String> {
+        val cuisinesData = remoteGsonDataSource.getCuisines()
+        return cuisinesData.meals.map { it.strArea }
+    }
+
 }

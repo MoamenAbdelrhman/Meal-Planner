@@ -21,4 +21,5 @@ interface RemoteGsonData {
     suspend fun getCategoryMeals(category: String): GsonDataMeal
 
     suspend fun getMealById(id: String): Meal
+
 }

@@ -1,4 +1,4 @@
-package com.example.foodplanner.auth
+package com.example.foodplanner.auth.signup.view
 
 import android.app.Activity.RESULT_OK
 import android.content.Intent
@@ -13,8 +13,12 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import com.example.foodplanner.main.view.MainActivity
 import com.example.foodplanner.R
+import com.example.foodplanner.auth.AuthActivity
+import com.example.foodplanner.auth.signup.viewModel.SignupViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -27,7 +31,8 @@ class SignupFragment : Fragment() {
 
     private val RC_SIGN_IN = 9001  // Request code for Google Sign-In
 
-    private lateinit var auth: FirebaseAuth
+    private val viewModel: SignupViewModel by viewModels()
+
     private lateinit var usernameEditText: EditText
     private lateinit var emailEditText: EditText
     private lateinit var passwordEditText: EditText
@@ -52,9 +57,6 @@ class SignupFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Initialize Firebase Auth
-        auth = FirebaseAuth.getInstance()
-
         // Initialize Views
         usernameEditText = view.findViewById(R.id.nameEditText)
         emailEditText = view.findViewById(R.id.emailEditText)
@@ -75,8 +77,8 @@ class SignupFragment : Fragment() {
             val email = emailEditText.text.toString().trim()
             val password = passwordEditText.text.toString().trim()
             val confirmPassword = confirmPasswordEditText.text.toString().trim()
-            if (validateInputs(name,email, password, confirmPassword)) {
-                signupUser(email, password)
+            if (viewModel.validateInputs(name, email, password, confirmPassword)) {
+                viewModel.signupUser(email, password)
             }
         }
 
@@ -84,11 +86,34 @@ class SignupFragment : Fragment() {
         loginButton.setOnClickListener {
             (activity as AuthActivity).navigateToLogin()
         }
+
         // Google Sign-Up Button Click
         view.findViewById<com.google.android.material.button.MaterialButton>(R.id.googleSignUpButton).setOnClickListener {
             signInWithGoogle()
         }
 
+        // Observe ViewModel
+        viewModel.signupSuccess.observe(viewLifecycleOwner, Observer { success ->
+            if (success) {
+                Toast.makeText(requireActivity(), "Signup successful!", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(requireActivity(), MainActivity::class.java))
+                requireActivity().finish()
+            }
+        })
+
+        viewModel.errorMessage.observe(viewLifecycleOwner, Observer { error ->
+            error?.let {
+                Toast.makeText(requireActivity(), error, Toast.LENGTH_SHORT).show()
+            }
+        })
+
+        viewModel.googleSignInSuccess.observe(viewLifecycleOwner, Observer { success ->
+            if (success) {
+                Toast.makeText(context, "Google login successful", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(requireContext(), MainActivity::class.java))
+                requireActivity().finish()
+            }
+        })
     }
 
     private fun signInWithGoogle() {
@@ -102,96 +127,20 @@ class SignupFragment : Fragment() {
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
-    private fun validateInputs(name: String, email: String, password: String, confirmPassword: String): Boolean {
-        if (name.isEmpty()) {
-            usernameInputLayout.error = "Name is required"
-            return false
-        }
-        if (email.isEmpty()) {
-            emailInputLayout.error = "Email is required"
-            return false
-        }
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailInputLayout.error = "Please enter a valid email"
-            return false
-        }
-        if (password.isEmpty()) {
-            passwordInputLayout.error = "Password is required"
-            return false
-        }
-        if (password.length < 6) {
-            passwordInputLayout.error = "Password must be at least 6 characters"
-            return false
-        }
-        if (confirmPassword.isEmpty()) {
-            confirmPasswordInputLayout.error = "Please confirm your password"
-            return false
-        }
-        if (password != confirmPassword) {
-            confirmPasswordInputLayout.error = "Passwords do not match"
-            return false
-        }
-        return true
-    }
-
-    private fun signupUser(email: String, password: String) {
-        progressBar.visibility = android.view.View.VISIBLE
-
-        auth.fetchSignInMethodsForEmail(email)
-            .addOnCompleteListener { task ->
-                progressBar.visibility = android.view.View.GONE
-                if (task.isSuccessful) {
-                    val result = task.result
-                    val signInMethods = result?.signInMethods
-
-                    if (signInMethods != null && signInMethods.isNotEmpty()) {
-                        Toast.makeText(requireActivity(), "This email is already registered", Toast.LENGTH_SHORT).show()
-                        (activity as AuthActivity).navigateToLogin()
-                    } else {
-                        auth.createUserWithEmailAndPassword(email, password)
-                            .addOnCompleteListener(requireActivity()) { task ->
-                                if (task.isSuccessful) {
-                                    Toast.makeText(requireActivity(), "Signup successful!", Toast.LENGTH_SHORT).show()
-                                    startActivity(Intent(requireActivity(), MainActivity::class.java))
-                                    requireActivity().finish()
-                                } else {
-                                    Toast.makeText(requireActivity(), "Signup failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                    }
-                } else {
-                    Toast.makeText(requireActivity(), "Error checking sign-in methods", Toast.LENGTH_SHORT).show()
-                }
-            }
-    }
-
     // Handle the Google Sign-In result
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == RC_SIGN_IN&& resultCode== RESULT_OK) {
+        if (requestCode == RC_SIGN_IN && resultCode == RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             try {
                 val account = task.getResult(ApiException::class.java)
                 if (account != null) {
-                    val credential = GoogleAuthProvider.getCredential(account.idToken, null)
-                    auth.signInWithCredential(credential)
-                        .addOnCompleteListener{ task ->
-                            if (task.isSuccessful) {
-                                // Sign-in success
-                                Toast.makeText(context, "Google login successful", Toast.LENGTH_SHORT).show()
-                                startActivity(Intent(requireContext(), MainActivity::class.java))
-                                requireActivity().finish()
-                            } else {
-                                // If sign in fails
-                                Toast.makeText(context, "Google login failed", Toast.LENGTH_SHORT).show()
-                            }
-                        }
+                    viewModel.signInWithGoogle(account.idToken!!)
                 }
             } catch (e: ApiException) {
                 Toast.makeText(context, "Google sign-in failed", Toast.LENGTH_SHORT).show()
             }
         }
     }
-
 }

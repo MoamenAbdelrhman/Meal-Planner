@@ -22,4 +22,6 @@ interface MealRepository {
 
     suspend fun getMealById(id: String): Meal
 
+    suspend fun getAllCuisines(): List<String>
+
 }

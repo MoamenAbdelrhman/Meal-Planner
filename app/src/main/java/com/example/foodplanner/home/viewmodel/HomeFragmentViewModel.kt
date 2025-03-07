@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodplanner.core.model.local.repository.UserRepository
 import com.example.foodplanner.core.model.remote.FailureReason
+import com.example.foodplanner.core.model.remote.GsonDataArea
 import com.example.foodplanner.core.model.remote.GsonDataCategories
 import com.example.foodplanner.core.model.remote.GsonDataMeal
 import com.example.foodplanner.core.model.remote.Meal
@@ -33,6 +34,27 @@ class HomeFragmentViewModel(
             mealRepository.getCategories()
         }
     }
+    private val _defaultMeals = MutableLiveData<Response<MutableList<Meal>>>()
+    val defaultMeals: LiveData<Response<MutableList<Meal>>> get() = _defaultMeals
+
+    fun getDefaultMeals(much: Int) {
+        applyResponse(_defaultMeals) {
+            val meals = mutableListOf<Meal>()
+            repeat(much) {
+                meals.add(mealRepository.getRandomDataMeal().meals.first())
+            }
+            meals
+        }
+    }
+
+    private var _filteredMealsByCategory: MutableLiveData<Response<GsonDataMeal>> = MutableLiveData()
+    val filteredMealsByCategory: LiveData<Response<GsonDataMeal>> get() = _filteredMealsByCategory
+
+    fun getFilteredMealsByCategory(category: String) {
+        applyResponse(_filteredMealsByCategory) {
+            mealRepository.getCategoryMeals(category)
+        }
+    }
 
     private val _userCuisines: MutableLiveData<Response<List<String>?>> = MutableLiveData()
     val userCuisines: LiveData<Response<List<String>?>> get() = _userCuisines
@@ -50,6 +72,21 @@ class HomeFragmentViewModel(
         applyResponse(_filteredMealsByAreas) {
             mealRepository.getCuisinesMeals(area)
         }
+    }
+    private val _randomMeal = MutableLiveData<Response<Meal>>()
+    val randomMeal: LiveData<Response<Meal>> get() = _randomMeal
+
+    fun getRandomMeal() {
+        applyResponse(_randomMeal) {
+            mealRepository.getRandomDataMeal().meals.first()
+        }
+    }
+
+    private val _allCuisines = MutableLiveData<Response<List<String>>>()
+    val allCuisines: LiveData<Response<List<String>>> get() = _allCuisines
+
+    fun getAllCuisines() = applyResponse(_allCuisines) {
+        mealRepository.getAllCuisines()
     }
 
     private val _someGoldMeals = MutableLiveData<Response<MutableList<Meal>>>()

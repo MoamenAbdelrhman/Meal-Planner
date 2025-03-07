@@ -181,7 +181,7 @@ class DetailsFragment : Fragment() {
             favouriteImage.setImageResource(
                 when (result) {
                     true -> R.drawable.loved_icon
-                    false -> R.drawable.heart
+                    false -> R.drawable.icons_favorite48
                 }
             )
         }

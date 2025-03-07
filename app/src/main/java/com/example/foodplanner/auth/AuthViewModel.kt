@@ -1,5 +1,6 @@
 package com.example.foodplanner.auth
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -15,11 +16,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.IOException
 
-class AuthViewModel(private val userRepository: UserRepositoryImpl) : ViewModel() {
+class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
 
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
     private val _user = MutableLiveData<User?>()
-    val user: LiveData<User?> get() = _user
+    val user: MutableLiveData<User?> get() = _user
 
     // LiveData for authentication status
     private val _authState = MutableLiveData<FirebaseUser?>()
@@ -32,7 +33,10 @@ class AuthViewModel(private val userRepository: UserRepositoryImpl) : ViewModel(
     val loginStatus: LiveData<Boolean> get() = _loginStatus
 
     init {
-        _authState.value = firebaseAuth.currentUser
+        Log.d("AuthDebug", "AuthViewModel Initialized - userRepository: $userRepository")
+
+        user.value =userRepository.getCurrentUser()
+        Log.d("AuthDebug", "Initial user value: ${user.value}")
     }
     private val _loggedOut = MutableLiveData<Response<Unit>>()
     val loggedOut: LiveData<Response<Unit>> get() = _loggedOut

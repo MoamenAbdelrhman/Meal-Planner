@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,12 +12,18 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import com.example.foodplanner.main.view.MainActivity
 import com.example.foodplanner.R
 import com.example.foodplanner.auth.AuthActivity
 import com.example.foodplanner.auth.Login.viewModel.LoginViewModel
 import com.example.foodplanner.auth.Login.viewModel.LoginViewModelFactory
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
+import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
+import com.example.foodplanner.core.model.local.source.UserDatabase
+import com.example.foodplanner.core.util.AlertUtil
 import com.example.foodplanner.core.util.SystemChecks.isNetworkAvailable
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -26,6 +33,7 @@ import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.google.firebase.auth.FirebaseAuth
 
 
 class LoginFragment : Fragment() {
@@ -42,10 +50,10 @@ class LoginFragment : Fragment() {
     private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var errorTextView: TextView
 
-    private val viewModel: LoginViewModel by viewModels(){
+    private val viewModel: LoginViewModel by viewModels {
         val userRepository = UserRepositoryImpl(
-            userDao = TODO(),
-            auth = TODO()
+            LocalDataSourceImpl(UserDatabase.getDatabaseInstance(requireContext()).userDao()),
+            FirebaseAuth.getInstance()
         )
         LoginViewModelFactory(userRepository)
     }
@@ -72,6 +80,7 @@ class LoginFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
         // Initialize UI components
         emailEditText = view.findViewById(R.id.emailEditText)
         passwordEditText = view.findViewById(R.id.passwordEditText)
@@ -91,9 +100,11 @@ class LoginFragment : Fragment() {
             val email = emailEditText.text.toString().trim()
             val password = passwordEditText.text.toString().trim()
             if (isNetworkAvailable(requireContext())) {
-                viewModel.loginUser(email, password) // Firebase + Room
-            } else {
-                viewModel.loginWithRoom(email, password) // Offline Mode
+                if (validateInputs(email, password)){
+                    viewModel.loginUser(email, password)
+                }
+            }else {
+                showToast("No internet connection")
             }
         }
 
@@ -107,6 +118,27 @@ class LoginFragment : Fragment() {
 
         forgetPasswordButton.setOnClickListener {
             (activity as AuthActivity).navigateToForgetPassword()
+        }
+    }
+    private fun validateInputs(email: String, password: String): Boolean {
+        return when {
+            email.isEmpty() -> {
+                emailInputLayout.error = getString(R.string.email_required)
+                false
+            }
+            !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
+                emailInputLayout.error = getString(R.string.invalid_email)
+                false
+            }
+            password.isEmpty() -> {
+                passwordInputLayout.error = getString(R.string.password_required)
+                false
+            }
+            password.length < 6 -> {
+                passwordInputLayout.error = getString(R.string.password_length)
+                false
+            }
+            else -> true
         }
     }
 
@@ -136,9 +168,10 @@ class LoginFragment : Fragment() {
         }
     }
 
-    private fun observeViewModel() {
+    private fun  observeViewModel() {
         viewModel.loginSuccess.observe(viewLifecycleOwner) { success ->
             if (success) {
+                viewModel.loginSuccess.removeObservers(viewLifecycleOwner)
                 startActivity(Intent(requireContext(), MainActivity::class.java))
                 requireActivity().finish()
             }

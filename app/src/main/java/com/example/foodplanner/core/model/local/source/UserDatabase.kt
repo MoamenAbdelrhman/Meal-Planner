@@ -24,16 +24,7 @@ abstract class UserDatabase : RoomDatabase() {
                     context = context,
                     klass = UserDatabase::class.java,
                     name = "food-planner_database"
-                )
-
-                    .build().also { INSTANCE = it }
-            }
-        }
-
-        private val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                // تعديل الجدول (إضافة عمود جديد مثلاً)
-                db.execSQL("ALTER TABLE User ADD COLUMN newColumn TEXT DEFAULT ''")
+                ).build().also { INSTANCE = it }
             }
         }
     }

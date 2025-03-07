@@ -161,8 +161,17 @@ class UserRepositoryImpl(
     /**
      * Returns the currently authenticated Firebase user.
      */
-    override fun getCurrentUser(): FirebaseUser? {
-        return auth.currentUser
+    override fun getCurrentUser(): User? {
+        val firebaseUser = FirebaseAuth.getInstance().currentUser
+        return firebaseUser?.let {
+            User(
+                id = it.uid,
+                username = it.displayName ?: "Unknown", // اسم افتراضي إذا لم يكن موجودًا
+                firebaseId = it.uid,
+                email = it.email, // قد يكون null، ولكن لا مشكلة
+                password = null,  // Firebase لا يوفر password بعد تسجيل الدخول
+            )
+        }
     }
 
     /**

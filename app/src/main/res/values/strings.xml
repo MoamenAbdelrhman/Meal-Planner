@@ -20,5 +20,6 @@
     <string name="google_link_failed">Failed to link Google account with your email. Please try again.</string>
     <string name="drawer_closed">drawer closed</string>
     <string name="drawer_opened">drawer opened</string>
+    <string name="login_alert">Please fill in all fields or remove spaces</string>
 
 </resources>
