@@ -1,5 +1,7 @@
 package com.example.foodplanner.details.view
 
+import android.app.AlertDialog
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import androidx.fragment.app.viewModels
@@ -8,9 +10,12 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -34,6 +39,8 @@ import com.example.foodplanner.core.viewmodel.DataViewModelFactory
 import com.example.foodplanner.details.view.adapter.DetailsAdapter
 import com.example.foodplanner.details.viewmodel.DetailsFactory
 import com.example.foodplanner.details.viewmodel.DetailsViewModel
+import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModel
+import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModelFactory
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.card.MaterialCardView
 import com.google.firebase.auth.FirebaseAuth
@@ -46,7 +53,6 @@ import kotlinx.coroutines.launch
 
 class DetailsFragment : Fragment() {
 
-
     private val detailsViewModel: DetailsViewModel by viewModels {
         val mealRepository = MealRepositoryImpl(RemoteGsonDataImpl())
         DetailsFactory(mealRepository)
@@ -58,7 +64,16 @@ class DetailsFragment : Fragment() {
             FirebaseAuth.getInstance()
         )
         val mealRepository = MealRepositoryImpl(RemoteGsonDataImpl())
-        DataViewModelFactory(userRepository, mealRepository)
+        val favouriteMealDao = UserDatabase.getDatabaseInstance(requireContext()).favouriteMealDao()
+        DataViewModelFactory(userRepository, mealRepository, favouriteMealDao)
+    }
+
+    private val mealPlanViewModel: MealPlanViewModel by activityViewModels {
+        val userRepository = UserRepositoryImpl(
+            LocalDataSourceImpl(UserDatabase.getDatabaseInstance(requireContext()).userDao()),
+            FirebaseAuth.getInstance()
+        )
+        MealPlanViewModelFactory(userRepository, requireContext())
     }
 
     // Youtube
@@ -67,16 +82,6 @@ class DetailsFragment : Fragment() {
     private lateinit var fullScreenContainer: FrameLayout
     private lateinit var iFramePlayerOptions: IFramePlayerOptions
     private var isFullscreen = false
-    private val onBackPressedCallback = object : OnBackPressedCallback(true) {
-        override fun handleOnBackPressed() {
-            if (isFullscreen) {
-                // if the player is in fullscreen, exit fullscreen
-                youtubePlayer.toggleFullscreen()
-            } else {
-                navController.popBackStack()
-            }
-        }
-    }
 
     private var recipeId: String = "52772"
     private lateinit var navController: NavController
@@ -90,16 +95,16 @@ class DetailsFragment : Fragment() {
     private lateinit var instructionsText: TextView
     private lateinit var backImage: ImageView
     private lateinit var mealImage: ImageView
-    private lateinit var favouriteImage: ImageView
+    private var favouriteImage: ImageView? = null
     private lateinit var ingredientsArrow: ImageView
     private lateinit var instructionsArrow: ImageView
     private lateinit var bottomNavigationView: BottomNavigationView
-
+    private lateinit var btnShare: ImageButton // زر المشاركة
+    private lateinit var btnAddToPlanDetails: Button // زر الإضافة إلى الخطة
+    private var currentMeal: Meal? = null // لتخزين الوجبة الحالية
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        requireActivity().onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
     }
 
     override fun onCreateView(
@@ -134,24 +139,23 @@ class DetailsFragment : Fragment() {
         ingredientsAdapter = DetailsAdapter()
         ingredientsCard = requireView().findViewById(R.id.ingredientsCard)
         instructionsCard = requireView().findViewById(R.id.instructionsCard)
-        backImage = requireView().findViewById(R.id.btn_back)
+        backImage = requireView().findViewById(R.id.profileBackBtn)
         mealImage = requireView().findViewById(R.id.mealImage)
-        favouriteImage = requireView().findViewById(R.id.btn_favorite)
+        favouriteImage = requireView().findViewById(R.id.btnDetailFavourite)
         ingredientsArrow = requireView().findViewById(R.id.ingredientsArrow)
         instructionsArrow = requireView().findViewById(R.id.instructionsArrow)
         mealName = requireView().findViewById(R.id.mealTitle)
         mealCategory = requireView().findViewById(R.id.category)
         mealArea = requireView().findViewById(R.id.mealArea)
         instructionsText = requireView().findViewById(R.id.instructionsText)
-
-        bottomNavigationView.visibility = View.GONE
+        btnShare = requireView().findViewById(R.id.btn_share) // تهيئة زر المشاركة
+        btnAddToPlanDetails = requireView().findViewById(R.id.btnAddToPlanDetails) // تهيئة زر الإضافة
     }
-
 
     private fun initListeners() {
         backImage.setOnClickListener { navController.popBackStack() }
 
-        favouriteImage.setOnClickListener {
+        favouriteImage?.setOnClickListener {
             changeFavouriteState(recipeId, true)
         }
 
@@ -164,6 +168,20 @@ class DetailsFragment : Fragment() {
             instructionsText.isVisible = !instructionsText.isVisible
             instructionsArrow.rotation = if (instructionsText.isVisible) 180f else 0f
         }
+
+        // تفعيل زر المشاركة
+        btnShare.setOnClickListener {
+            shareMeal()
+        }
+
+        // تفعيل زر الإضافة إلى الخطة
+        btnAddToPlanDetails.setOnClickListener {
+            currentMeal?.let { meal ->
+                showAddToPlanDialog(meal)
+            } ?: run {
+                Toast.makeText(requireContext(), "No meal available to add", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun initObservers() {
@@ -174,11 +192,12 @@ class DetailsFragment : Fragment() {
         }
 
         detailsViewModel.recipe.observe(viewLifecycleOwner) { result ->
+            currentMeal = result // تخزين الوجبة الحالية
             bindData(result)
         }
 
         dataViewModel.isFavourite.observe(viewLifecycleOwner) { result ->
-            favouriteImage.setImageResource(
+            favouriteImage?.setImageResource(
                 when (result) {
                     true -> R.drawable.loved_icon
                     false -> R.drawable.icons_favorite48
@@ -190,7 +209,6 @@ class DetailsFragment : Fragment() {
     private fun bindData(recipe: Meal) {
         ingredientsAdapter.updateData(recipe.listIngredientsWithMeasures)
         ingredientsRecycler.adapter = ingredientsAdapter
-        ingredientsRecycler.layoutManager = LinearLayoutManager(requireContext())
         mealName.text = recipe.strMeal
         mealCategory.text = recipe.strCategory
         mealArea.text = recipe.strArea
@@ -203,6 +221,32 @@ class DetailsFragment : Fragment() {
         dataViewModel.viewModelScope.launch {
             dataViewModel.changeFavouriteState(recipeId, isChange)
         }
+    }
+
+    private fun shareMeal() {
+        currentMeal?.let { meal ->
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, "Check out this recipe!")
+                putExtra(Intent.EXTRA_TEXT, "Try this delicious recipe: ${meal.strMeal}\nVideo: ${meal.strYoutube}")
+            }
+            startActivity(Intent.createChooser(shareIntent, "Share via"))
+        } ?: run {
+            Toast.makeText(requireContext(), "No meal to share", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showAddToPlanDialog(meal: Meal) {
+        val days = arrayOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+        AlertDialog.Builder(requireContext())
+            .setTitle("What day would you like to add ${meal.strMeal} ?")
+            .setItems(days) { _, which ->
+                val selectedDay = days[which]
+                mealPlanViewModel.addMealToPlan(selectedDay, meal)
+                Toast.makeText(requireContext(), "${meal.strMeal} added to $selectedDay", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun activateYoutubePlayer(url: String) {
@@ -247,12 +291,10 @@ class DetailsFragment : Fragment() {
                         ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
                 }
             }
-
         })
         youtubePlayerView.enableAutomaticInitialization = false
         youtubePlayerView.initialize(youtubePlayerListener, iFramePlayerOptions)
     }
-
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
@@ -269,7 +311,9 @@ class DetailsFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        bottomNavigationView.visibility = View.VISIBLE
-        youtubePlayerView.release()
+        Glide.with(this).clear(mealImage)
+        youtubePlayerView.postDelayed({
+            youtubePlayerView.release()
+        }, 100)
     }
 }

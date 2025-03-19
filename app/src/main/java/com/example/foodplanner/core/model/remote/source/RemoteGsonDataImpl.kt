@@ -1,5 +1,7 @@
 package com.example.foodplanner.core.model.remote.source
 
+import com.example.foodplanner.core.model.remote.GsonDataMeal
+import com.example.foodplanner.core.model.remote.IngredientResponse
 import com.example.foodplanner.core.model.remote.Meal
 
 
@@ -14,5 +16,10 @@ class RemoteGsonDataImpl : RemoteGsonData {
         GsonApi.service.getCategoryMeals(category)
 
     override suspend fun getMealById(id: String): Meal = GsonApi.service.getMealById(id).meals[0]
+
+    override suspend fun getMealsByIngredient(ingredient: String) = GsonApi.service.getMealsByIngredient(ingredient)
+
+    override suspend fun getIngredients(): IngredientResponse = GsonApi.service.getIngredients()
+
 
 }

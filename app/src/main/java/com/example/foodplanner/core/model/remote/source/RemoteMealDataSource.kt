@@ -3,6 +3,7 @@ package com.example.foodplanner.core.model.remote.source
 import com.example.foodplanner.core.model.remote.GsonDataArea
 import com.example.foodplanner.core.model.remote.GsonDataCategories
 import com.example.foodplanner.core.model.remote.GsonDataMeal
+import com.example.foodplanner.core.model.remote.IngredientResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -27,5 +28,11 @@ interface RemoteMealDataSource {
 
     @GET("lookup.php")
     suspend fun getMealById(@Query("i") id: String): GsonDataMeal
+
+    @GET("filter.php")
+    suspend fun getMealsByIngredient(@Query("i") ingredient: String): GsonDataMeal
+
+    @GET("list.php?i=list")
+    suspend fun getIngredients(): IngredientResponse
 
 }

@@ -3,27 +3,44 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_home"
-    app:startDestination="@id/homeFragment">
+    app:startDestination="@id/action_home">
 
     <fragment
-        android:id="@+id/homeFragment"
+        android:id="@+id/action_home"
         android:name="com.example.foodplanner.home.view.HomeFragment"
         android:label="fragment_home"
-        tools:layout="@layout/fragment_home" >
-    </fragment>
+        tools:layout="@layout/fragment_home" />
     <fragment
-        android:id="@+id/favoritesFragment"
-        android:name="com.example.foodplanner.Fragments.FavoritesFragment"
-        android:label="fragment_favorites"
-        tools:layout="@layout/fragment_favorites" />
-    <fragment
-        android:id="@+id/detailsFragment"
+        android:id="@+id/action_details"
         android:name="com.example.foodplanner.details.view.DetailsFragment"
         android:label="fragment_detail"
         tools:layout="@layout/fragment_detail" />
     <fragment
-        android:id="@+id/mealPlanFragment"
-        android:name="com.example.foodplanner.Fragments.MealPlanFragment"
+        android:id="@+id/action_favourite"
+        android:name="com.example.foodplanner.favourite.view.FavouriteFragment"
+        android:label="fragment_favourite"
+        tools:layout="@layout/fragment_favourite" />
+    <fragment
+        android:id="@+id/action_meal_plan"
+        android:name="com.example.foodplanner.meal_plan.view.MealPlanFragment"
         android:label="fragment_meal_plan"
         tools:layout="@layout/fragment_meal_plan" />
+    <fragment
+        android:id="@+id/action_search"
+        android:name="com.example.foodplanner.search.view.SearchFragment"
+        android:label="SearchFragment" />
+    <fragment
+        android:id="@+id/mealsFragment"
+        android:name="com.example.foodplanner.search.view.MealsFragment"
+        android:label="MealsFragment" />
+    <fragment
+        android:id="@+id/action_about"
+        android:name="com.example.foodplanner.AboutAppFragment"
+        android:label="fragment_about_app"
+        tools:layout="@layout/fragment_about_app" />
+    <fragment
+        android:id="@+id/action_about_developer"
+        android:name="com.example.foodplanner.AboutDeveloperFragment"
+        android:label="fragment_about_developer"
+        tools:layout="@layout/fragment_about_developer" />
 </navigation>

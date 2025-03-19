@@ -38,12 +38,29 @@ class HomeFragmentViewModel(
     val defaultMeals: LiveData<Response<MutableList<Meal>>> get() = _defaultMeals
 
     fun getDefaultMeals(much: Int) {
-        applyResponse(_defaultMeals) {
-            val meals = mutableListOf<Meal>()
-            repeat(much) {
-                meals.add(mealRepository.getRandomDataMeal().meals.first())
+        _defaultMeals.value = Response.Loading
+
+        val handler = CoroutineExceptionHandler { _, exception ->
+            _defaultMeals.value = Response.Failure(
+                FailureReason.UnknownError(
+                    error = exception.message ?: "Unknown error occurred"
+                )
+            )
+            Log.e("HomeFragmentViewModel", "Unknown: ${exception.message}")
+        }
+
+        viewModelScope.launch(handler) {
+            val foundMeals = mutableListOf<Deferred<Meal>>().apply {
+                repeat(much) {
+                    add(
+                        async {
+                            mealRepository.getRandomDataMeal().meals.first()
+                        }
+                    )
+                }
             }
-            meals
+            val meals = foundMeals.awaitAll().toMutableList()
+            _defaultMeals.value = Response.Success(meals)
         }
     }
 
@@ -142,12 +159,6 @@ class HomeFragmentViewModel(
                 liveData.value = Response.Success(result)
             } catch (e: IOException) {
                 liveData.value = Response.Failure(FailureReason.NoInternet)
-            } catch (e: Exception) {
-                liveData.value = Response.Failure(
-                    FailureReason.UnknownError(
-                        error = e.message ?: "Unknown error occurred"
-                    )
-                )
             }
         }
     }

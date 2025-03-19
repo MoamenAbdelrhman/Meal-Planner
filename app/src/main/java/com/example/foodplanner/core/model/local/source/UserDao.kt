@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.example.foodplanner.core.model.MealEntity
 import com.example.foodplanner.core.model.UserEntity
 import com.example.foodplanner.core.model.local.User
 
@@ -110,5 +111,6 @@ interface UserDao {
 
     @Query("SELECT isSubscribed FROM user WHERE isLoggedIn = 1")
     suspend fun checkSubscriptionState(): Boolean
+
 
 }

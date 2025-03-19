@@ -3,11 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_profile"
-        android:title="Profile"
-        app:showAsAction="ifRoom" />
-
-    <item
         android:id="@+id/action_settings"
         android:title="Settings"
         android:visible="false"
@@ -29,7 +24,8 @@
     <item
         android:id="@+id/action_about"
         android:title="About"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom"
+        />
 
     <item
         android:id="@+id/action_about_developer"

@@ -54,10 +54,10 @@ data class Meal(
     val strImageSource: String?,
     val strCreativeCommonsConfirmed: String?,
     val dateModified: String?,
-    var listIngredientsWithMeasures: List<String> = emptyList()
+    var listIngredientsWithMeasures: List<Pair<String, String>> = emptyList(), // تغيير النوع هنا
 )
 
-fun Meal.getIngredientsWithMeasurements(): List<String> {
+fun Meal.getIngredientsWithMeasurements(): List<Pair<String, String>> {
     val ingredients = listOf(
         strIngredient1 to strMeasure1,
         strIngredient2 to strMeasure2,
@@ -83,5 +83,5 @@ fun Meal.getIngredientsWithMeasurements(): List<String> {
 
     return ingredients
         .filter { (ingredient, measure) -> !ingredient.isNullOrEmpty() && !measure.isNullOrEmpty() }
-        .mapIndexed { index, (ingredient, measure) -> "${index + 1}) $ingredient: $measure" }
+        .map { (ingredient, measure) -> Pair(ingredient.orEmpty().trim(), measure.orEmpty().trim()) }
 }

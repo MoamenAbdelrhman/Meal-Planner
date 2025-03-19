@@ -1,5 +1,6 @@
 package com.example.foodplanner.core.model.local.source
 
+import com.example.foodplanner.core.model.MealEntity
 import com.example.foodplanner.core.model.local.User
 
 class LocalDataSourceImpl(private val userDao: UserDao) : LocalDataSource {
@@ -82,5 +83,6 @@ class LocalDataSourceImpl(private val userDao: UserDao) : LocalDataSource {
     override suspend fun insertUser(user: User) {
         userDao.insertUser(user)
     }
+
 
 }

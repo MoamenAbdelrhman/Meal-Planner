@@ -1,5 +1,6 @@
 package com.example.foodplanner.core.model.local.source
 
+import com.example.foodplanner.core.model.MealEntity
 import com.example.foodplanner.core.model.local.User
 
 

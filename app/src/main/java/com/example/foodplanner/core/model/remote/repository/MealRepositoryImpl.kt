@@ -1,5 +1,7 @@
 package com.example.foodplanner.core.model.remote.repository
 
+import com.example.foodplanner.core.model.remote.IngredientResponse
+import com.example.foodplanner.core.model.remote.Meal
 import com.example.foodplanner.core.model.remote.source.RemoteGsonData
 
 
@@ -31,5 +33,19 @@ class MealRepositoryImpl(
         val cuisinesData = remoteGsonDataSource.getCuisines()
         return cuisinesData.meals.map { it.strArea }
     }
+
+    override suspend fun getMealsByArea(area: String): List<Meal> {
+        return remoteGsonDataSource.getCuisinesMeals(area).meals
+    }
+
+    override suspend fun getMealsByIngredient(ingredient: String): List<Meal> {
+        return remoteGsonDataSource.getMealsByIngredient(ingredient).meals
+    }
+
+    override suspend fun getMealsByCategory(category: String): List<Meal> {
+        return remoteGsonDataSource.getCategoryMeals(category).meals
+    }
+    override suspend fun getIngredients(): IngredientResponse = remoteGsonDataSource.getIngredients()
+
 
 }

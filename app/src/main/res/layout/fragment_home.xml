@@ -16,12 +16,14 @@
 
         <ImageView
             android:id="@+id/btnHomeDrawer"
-            android:layout_width="40dp"
-            android:layout_height="50dp"
-            app:layout_constraintStart_toStartOf="@id/cardViewFreeTrial"
-            app:layout_constraintTop_toTopOf="@id/cardViewHome"
+            android:layout_width="35dp"
+            android:layout_height="45dp"
+            android:padding="1dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/icon_app_drawer" />
+            android:src="@drawable/icon_app_drawer"
+            app:layout_constraintBottom_toBottomOf="@+id/cardViewHome"
+            app:layout_constraintStart_toStartOf="@id/cardViewFreeTrial"
+            app:layout_constraintTop_toTopOf="@+id/cardViewHome" />
 
         <!-- Search Bar -->
         <com.google.android.material.card.MaterialCardView
@@ -63,7 +65,7 @@
                     android:layout_marginEnd="8dp"
                     android:background="@android:color/transparent"
                     android:gravity="center_vertical"
-                    android:hint="Search your recipe"
+                    android:hint="Search your meal"
                     android:textColor="@color/black"
                     android:textColorHint="@color/black"
                     android:textSize="16sp"
@@ -104,6 +106,7 @@
                 app:cardBackgroundColor="@color/black"
                 app:cardCornerRadius="25dp"
                 app:cardElevation="8dp"
+                app:strokeWidth="0dp"
                 >
 
                 <androidx.constraintlayout.widget.ConstraintLayout
@@ -112,61 +115,34 @@
                     android:layout_height="match_parent"
                     >
 
-                    <com.google.android.material.card.MaterialCardView
+
+                    <ImageView
+                        android:id="@+id/meal_image"
                         android:layout_width="match_parent"
                         android:layout_height="180dp"
+                        android:scaleType="centerCrop"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintHorizontal_bias="0.0"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent">
-
-                        <ImageView
-                            android:id="@+id/meal_image"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:scaleType="centerCrop"
-                            tools:srcCompat="@tools:sample/avatars" />
-
-                    </com.google.android.material.card.MaterialCardView>
-
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/materialCardViewFav"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        android:layout_marginTop="15dp"
-                        android:layout_marginEnd="15dp"
-                        app:cardBackgroundColor="@color/white"
-                        app:cardElevation="10dp"
-                        app:strokeWidth="0.5dp">
-
-                        <ImageButton
-                            android:id="@+id/btn_favoriteH"
-                            android:layout_width="28dp"
-                            android:layout_height="30dp"
-                            android:layout_gravity="center"
-                            android:background="@drawable/icons_favorite48"
-                            android:contentDescription="Favorite"
-                            />
-
-                    </com.google.android.material.card.MaterialCardView>
+                        app:layout_constraintVertical_bias="0.0"
+                        tools:srcCompat="@tools:sample/avatars" />
 
                     <androidx.appcompat.widget.AppCompatButton
                         android:id="@+id/btn_add_to_plan"
-                        android:layout_width="100dp"
-                        android:layout_height="40dp"
-                        android:layout_marginStart="20dp"
-                        android:layout_marginBottom="16dp"
+                        android:layout_width="160dp"
+                        android:layout_height="45dp"
+                        android:layout_marginEnd="15dp"
+                        android:layout_marginBottom="10dp"
                         android:background="@drawable/entrydata"
+                        android:elevation="4dp"
                         android:inputType="text"
                         android:text="Add to plan"
-                        android:textColor="@color/black"
-                        android:textSize="14sp"
-                        android:elevation="4dp"
+                        android:textColor="@color/white"
+                        android:textSize="16sp"
                         app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintStart_toStartOf="parent" />
+                        app:layout_constraintEnd_toEndOf="parent" />
 
                     <TextView
                         android:id="@+id/meal_name"
@@ -176,7 +152,7 @@
                         android:minLines="2"
                         android:layout_marginStart="22dp"
                         android:layout_marginTop="16dp"
-                        android:text="TextView              "
+                        android:text=""
                         android:textSize="20sp"
                         android:textStyle="bold"
                         android:textColor="@color/white"
@@ -281,62 +257,11 @@
                     android:id="@+id/recyclerview_mealByCategories"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
                     android:layout_marginTop="5dp"
-                    android:layout_marginEnd="10dp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
-
-
-        <!--
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/constraintlayoutGold"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            app:layout_constraintTop_toBottomOf="@id/constraintlayoutcatg">
-
-            <TextView
-                android:id="@+id/textViewGold"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginTop="20dp"
-                android:text="Gold Recipes for you"
-                android:textColor="@color/gold"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <com.facebook.shimmer.ShimmerFrameLayout
-                android:id="@+id/shimmerGold"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                app:layout_constraintEnd_toEndOf="@id/recyclerviewGold"
-                app:layout_constraintStart_toStartOf="@id/recyclerviewGold"
-                app:layout_constraintTop_toTopOf="@id/recyclerviewGold">
-
-                <include layout="@layout/shimmer_placeholder_main_view_meal_layout" />
-
-            </com.facebook.shimmer.ShimmerFrameLayout>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerviewGold"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="10dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/textViewGold" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-        -->
 
         <TextView
             android:id="@+id/textView4"
@@ -361,6 +286,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
+                android:padding="5dp"
                 app:layout_constraintEnd_toEndOf="@id/recyclerview_recommendations"
                 app:layout_constraintStart_toStartOf="@id/recyclerview_recommendations"
                 app:layout_constraintTop_toTopOf="@id/recyclerview_recommendations">
@@ -373,10 +299,7 @@
                 android:id="@+id/recyclerview_recommendations"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="5dp"
-                android:layout_marginEnd="10dp"
-
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -388,11 +311,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="20dp"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="5dp"
+            android:layout_marginTop="0dp"
             app:cardBackgroundColor="@color/white_v2"
             app:cardCornerRadius="50dp"
-            app:layout_constraintBottom_toBottomOf="@+id/textViewCuisines"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/constraintlayout1"
             app:strokeWidth="0dp">
@@ -410,7 +331,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="20dp"
-            android:layout_marginTop="5dp"
+            android:layout_marginTop="10dp"
             android:textColor="@color/black"
             android:textSize="20sp"
             android:textStyle="bold"
@@ -420,13 +341,14 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@id/textViewCuisines">
+            app:layout_constraintTop_toBottomOf="@id/btnCuisines">
 
             <com.facebook.shimmer.ShimmerFrameLayout
                 android:id="@+id/shimmer_meal_by_fav_cuisine"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
+                android:layout_marginTop="10dp"
                 app:layout_constraintEnd_toEndOf="@id/recyclerview_meal_by_fav_cuisine"
                 app:layout_constraintStart_toStartOf="@id/recyclerview_meal_by_fav_cuisine"
                 app:layout_constraintTop_toTopOf="@id/recyclerview_meal_by_fav_cuisine">
@@ -439,9 +361,7 @@
                 android:id="@+id/recyclerview_meal_by_fav_cuisine"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="10dp"
+                android:layout_marginTop="5dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 

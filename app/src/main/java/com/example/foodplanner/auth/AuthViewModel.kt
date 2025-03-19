@@ -7,7 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodplanner.core.model.local.User
 import com.example.foodplanner.core.model.local.repository.UserRepository
-import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.remote.FailureReason
 import com.example.foodplanner.core.model.remote.Response
 import com.google.firebase.auth.FirebaseAuth
@@ -22,7 +21,6 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
     private val _user = MutableLiveData<User?>()
     val user: MutableLiveData<User?> get() = _user
 
-    // LiveData for authentication status
     private val _authState = MutableLiveData<FirebaseUser?>()
     val authState: LiveData<FirebaseUser?> get() = _authState
 
@@ -34,18 +32,16 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
 
     init {
         Log.d("AuthDebug", "AuthViewModel Initialized - userRepository: $userRepository")
-
-        user.value =userRepository.getCurrentUser()
+        user.value = userRepository.getCurrentUser()
         Log.d("AuthDebug", "Initial user value: ${user.value}")
     }
+
     private val _loggedOut = MutableLiveData<Response<Unit>>()
     val loggedOut: LiveData<Response<Unit>> get() = _loggedOut
-
 
     fun logOut() = applyResponse(_loggedOut) {
         userRepository.logOutUser()
     }
-
 
     fun saveUserToLocalDatabase(user: User) {
         viewModelScope.launch {
@@ -82,9 +78,6 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         }
     }
 
-    /**
-     * Sign in a user with email and password.
-     */
     fun signIn(email: String, password: String) {
         viewModelScope.launch {
             firebaseAuth.signInWithEmailAndPassword(email, password)
@@ -106,9 +99,6 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         }
     }
 
-    /**
-     * Register a new user and store their data in Room Database.
-     */
     fun signUp(username: String, email: String, password: String) {
         viewModelScope.launch {
             firebaseAuth.createUserWithEmailAndPassword(email, password)
@@ -135,9 +125,6 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         }
     }
 
-    /**
-     * Log out the user from Firebase and update Room Database.
-     */
     fun signOut() {
         viewModelScope.launch {
             firebaseAuth.signOut()
@@ -148,17 +135,11 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         }
     }
 
-    /**
-     * Check if a user is currently logged in.
-     */
     fun checkUserLoggedIn() {
         _authState.postValue(firebaseAuth.currentUser)
         _loginStatus.postValue(firebaseAuth.currentUser != null)
     }
 
-    /**
-     * Get the currently logged-in user's email.
-     */
     fun getLoggedInEmail(): LiveData<String> {
         val emailLiveData = MutableLiveData<String>()
         viewModelScope.launch {

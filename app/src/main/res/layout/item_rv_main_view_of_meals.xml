@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="220dp"
+    android:layout_width="235dp"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_marginStart="4dp"
-    android:layout_marginEnd="10dp"
+    android:layout_marginStart="10dp"
+    android:layout_marginEnd="5dp"
     android:layout_marginBottom="16dp"
     android:layout_marginTop="8dp"
-
     android:background="@drawable/gray_background"
     android:elevation="5dp"
     >
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/materialCardView"
         android:layout_width="match_parent"
-        android:layout_height="220dp"
+        android:layout_height="215dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:cardCornerRadius="10dp"
+        app:strokeWidth="0dp"
         >
 
         <ImageView
@@ -29,59 +29,51 @@
             android:scaleType="centerCrop"
             android:src="@drawable/man"
             />
+
+        <ImageView
+            android:id="@+id/btnHomeFavourite"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginEnd="5dp"
+            android:padding="3dp"
+            android:background="@drawable/button_background"
+            android:layout_gravity="end"
+            android:src="@drawable/icons_favorite48"
+            android:contentDescription="Favorite"/>
+
     </com.google.android.material.card.MaterialCardView>
 
 
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+    <TextView
+        android:id="@+id/item_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="14dp"
+        android:maxLines="2"
+        android:minLines="2"
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="10dp"
-        android:layout_marginEnd="10dp"
-        app:cardBackgroundColor="@color/white"
-        app:cardElevation="8dp"
-        app:strokeWidth="0.5dp">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/materialCardView" />
 
-        <ImageButton
-            android:id="@+id/btn_favoriteH"
-            android:layout_width="26dp"
-            android:layout_height="28dp"
-            android:layout_gravity="center"
-            android:background="@drawable/icons_favorite48"
-            android:contentDescription="Favorite" />
-
-    </com.google.android.material.card.MaterialCardView>
-
-
-            <TextView
-                android:id="@+id/item_title"
+    <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnAddToPlan"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="2"
-                android:minLines="2"
-                android:layout_marginTop="4dp"
-                android:layout_marginEnd="12dp"
-                android:layout_marginStart="12dp"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/materialCardView" />
-
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btn_add_to_planH"
-                android:layout_width="0dp"
-                android:layout_height="35dp"
+                android:layout_height="45dp"
                 android:layout_marginStart="20dp"
                 android:layout_marginTop="5dp"
                 android:layout_marginEnd="20dp"
-                android:layout_marginBottom="10dp"
+                android:layout_marginBottom="8dp"
                 android:background="@drawable/entrydata"
                 android:inputType="text"
                 android:text="Add to plan"
-                android:textSize="14sp"
+                android:textColor="@color/myGray"
+                android:textSize="16sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"

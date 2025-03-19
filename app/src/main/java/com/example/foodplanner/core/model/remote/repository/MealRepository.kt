@@ -3,7 +3,9 @@ package com.example.foodplanner.core.model.remote.repository
 import com.example.foodplanner.core.model.remote.GsonDataArea
 import com.example.foodplanner.core.model.remote.GsonDataCategories
 import com.example.foodplanner.core.model.remote.GsonDataMeal
+import com.example.foodplanner.core.model.remote.IngredientResponse
 import com.example.foodplanner.core.model.remote.Meal
+import com.example.foodplanner.core.model.remote.source.GsonApi
 
 
 interface MealRepository {
@@ -23,5 +25,11 @@ interface MealRepository {
     suspend fun getMealById(id: String): Meal
 
     suspend fun getAllCuisines(): List<String>
+
+    suspend fun getMealsByArea(area: String): List<Meal>?
+    suspend fun getMealsByIngredient(ingredient: String): List<Meal>?
+    suspend fun getMealsByCategory(category: String): List<Meal>?
+
+    suspend fun getIngredients(): IngredientResponse
 
 }

@@ -8,7 +8,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import com.example.foodplanner.R
-import com.example.foodplanner.auth.Login.view.LoginFragment
+import com.example.foodplanner.auth.login.view.LoginFragment
 import com.example.foodplanner.auth.signup.view.SignupFragment
 import com.example.foodplanner.main.view.MainActivity
 import com.google.firebase.auth.FirebaseAuth

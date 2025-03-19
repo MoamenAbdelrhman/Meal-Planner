@@ -7,17 +7,17 @@
         android:title="Home"
         app:showAsAction="ifRoom"/>
     <item
-        android:id="@+id/nav_search"
+        android:id="@+id/action_search"
         android:icon="@drawable/search"
         android:title="Search"
         app:showAsAction="ifRoom"/>
     <item
-        android:id="@+id/nav_favorites"
+        android:id="@+id/action_favourite"
         android:icon="@drawable/heart"
         android:title="Favorites"
         app:showAsAction="ifRoom"/>
     <item
-        android:id="@+id/nav_meal_plan"
+        android:id="@+id/action_meal_plan"
         android:icon="@drawable/planning"
         android:title="Meal Plan"
         app:showAsAction="ifRoom"/>

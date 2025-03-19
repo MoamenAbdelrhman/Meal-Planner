@@ -3,6 +3,7 @@ package com.example.foodplanner.core.model.remote.source
 import com.example.foodplanner.core.model.remote.GsonDataArea
 import com.example.foodplanner.core.model.remote.GsonDataCategories
 import com.example.foodplanner.core.model.remote.GsonDataMeal
+import com.example.foodplanner.core.model.remote.IngredientResponse
 import com.example.foodplanner.core.model.remote.Meal
 
 
@@ -21,5 +22,9 @@ interface RemoteGsonData {
     suspend fun getCategoryMeals(category: String): GsonDataMeal
 
     suspend fun getMealById(id: String): Meal
+
+    suspend fun getMealsByIngredient(ingredient: String): GsonDataMeal
+
+    suspend fun getIngredients(): IngredientResponse
 
 }

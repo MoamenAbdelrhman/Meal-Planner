@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    tools:context=".aboutapp.view.AboutAppFragment">
+    tools:context=".AboutAppFragment">
 
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollView"
@@ -16,10 +16,12 @@
         android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
         android:background="@android:color/white"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -33,7 +35,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:paddingBottom="16dp"
-                android:text="Recipe App"
+                android:text="FoodPlanner"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
                 android:textColor="@color/black"
                 android:textSize="30sp"
@@ -55,7 +57,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingBottom="16dp"
-                android:text="The Recipe App offers a seamless cooking experience with features designed to make your culinary journey enjoyable and easy. From discovering new recipes to saving your favorites, the app is built to enhance your time in the kitchen."
+                android:text="FoodPlanner is your perfect partner for organizing your meals and creating a balanced diet effortlessly. Whether you're saving your favorite recipes, planning weekly meals, or exploring healthy options, this app empowers you to take control of your nutrition and enjoy delicious, tailored meals every day."
                 android:textAppearance="@style/TextAppearance.AppCompat.Body1"
                 android:textColor="@color/black" />
 
@@ -74,7 +76,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingBottom="16dp"
-                android:text="• User Authentication: Securely log in or register to keep your data safe.\n\n• Favorites: Mark recipes you love and quickly access them anytime.\n\n• Recipe Search: Easily find recipes by name, ingredient, or category.\n\n• Detailed Recipe View: Get comprehensive details about each recipe, including ingredients, instructions, and nutritional info."
+                android:text="• User Authentication: Log in or sign up securely to personalize your experience.\n\n• Favorites: Save and access your favorite recipes anytime with ease.\n\n• Meal Planning: Create and manage weekly meal plans tailored to your preferences.\n\n• Recipe Details: View detailed recipes with ingredients, instructions, and nutritional information."
                 android:textAppearance="@style/TextAppearance.AppCompat.Body1"
                 android:textColor="@color/black" />
 
@@ -93,7 +95,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingBottom="16dp"
-                android:text="• Interactive Splash Screen: A visually appealing introduction to the app, powered by Lottie animations.\n\n• YouTube-Like Video Player: Watch recipe tutorials directly within the app, with a mini player that stays on screen while you browse other content.\n\n• Personalized Experience: The app remembers your preferences and customizes your experience based on your likes and cooking habits."
+                android:text="• Personalized Diet Plans: Customize your meal plans based on your dietary needs and goals.\n\n• Sync Across Devices: Access your plans and recipes on multiple devices seamlessly.\n\n• Nutritional Insights: Get insights into the nutritional value of your meals to stay healthy."
                 android:textAppearance="@style/TextAppearance.AppCompat.Body1"
                 android:textColor="@color/black" />
 
@@ -112,9 +114,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingBottom="16dp"
-                android:text="• Smooth Navigation: Effortlessly switch between different sections of the app using the Bottom Navigation component.\n\n• Login Security: Once you're logged in, you won't accidentally navigate back to the login screen.\n\n• Quick Access: Start directly on the Home screen if you've logged in before, with your preferences intact."
+                android:text="• Intuitive Navigation: Easily switch between meal plans, recipes, and settings with the Bottom Navigation bar.\n\n• Secure Login: Stay logged in without accidental logout, resuming where you left off.\n\n• Quick Start: Jump straight to your meal plans if logged in previously, with your preferences saved."
                 android:textAppearance="@style/TextAppearance.AppCompat.Body1"
                 android:textColor="@color/black" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

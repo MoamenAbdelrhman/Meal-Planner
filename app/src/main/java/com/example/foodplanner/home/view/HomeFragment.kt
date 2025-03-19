@@ -1,5 +1,6 @@
 package com.example.foodplanner.home.view
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -10,11 +11,14 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.PopupMenu
 import android.widget.TextView
+import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
@@ -35,16 +39,20 @@ import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder.create
 import com.example.foodplanner.core.util.SystemChecks
 import com.example.foodplanner.core.viewmodel.DataViewModel
 import com.example.foodplanner.core.viewmodel.DataViewModelFactory
+import com.example.foodplanner.details.viewmodel.DetailsFactory
+import com.example.foodplanner.details.viewmodel.DetailsViewModel
 import com.example.foodplanner.home.view.adapter.AdapterRVCategories
 import com.example.foodplanner.home.view.adapter.AdapterRVItemMeal
 import com.example.foodplanner.home.viewModel.HomeFragmentViewModel
 import com.example.foodplanner.home.viewModel.HomeFragmentViewModelFactory
 import com.example.foodplanner.main.viewModel.RecipeActivityViewModel
 import com.example.foodplanner.main.viewModel.RecipeActivityViewModelFactory
+import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModel
+import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModelFactory
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.android.material.card.MaterialCardView
 import com.google.firebase.auth.FirebaseAuth
-
+import kotlinx.coroutines.launch
 
 class HomeFragment : Fragment() {
 
@@ -72,7 +80,16 @@ class HomeFragment : Fragment() {
             FirebaseAuth.getInstance()
         )
         val mealRepository = MealRepositoryImpl(RemoteGsonDataImpl())
-        DataViewModelFactory(userRepository, mealRepository)
+        val favouriteMealDao = UserDatabase.getDatabaseInstance(requireContext()).favouriteMealDao()
+        DataViewModelFactory(userRepository, mealRepository, favouriteMealDao)
+    }
+
+    private val mealPlanViewModel: MealPlanViewModel by activityViewModels {
+        val userRepository = UserRepositoryImpl(
+            LocalDataSourceImpl(UserDatabase.getDatabaseInstance(requireContext()).userDao()),
+            FirebaseAuth.getInstance()
+        )
+        MealPlanViewModelFactory(userRepository, requireContext())
     }
 
     private lateinit var recyclerViewCategories: RecyclerView
@@ -85,15 +102,20 @@ class HomeFragment : Fragment() {
     private lateinit var shimmerCuisine: ShimmerFrameLayout
     private lateinit var btnDrawer: ImageView
     private lateinit var textViewCuisines: TextView
-    private lateinit var constraintLayoutGold: ConstraintLayout
     private lateinit var cardViewFreeTrial: MaterialCardView
-    private lateinit var shimmerGold: ShimmerFrameLayout
-    private lateinit var recyclerViewGold: RecyclerView
     private lateinit var btnAddToPlan: Button
     private lateinit var btnCuisines: MaterialCardView
     private lateinit var popup: PopupMenu
     private lateinit var drawer: DrawerLayout
     private lateinit var searchBarHome: TextView
+    private lateinit var mealImage: ImageView
+
+    private var favouriteState = false
+    private var isCategoriesLoaded = false
+    private var selectedCategory: String? = "Beef"
+    private var isDataLoaded = false
+    private var mealOfTheDay: Meal? = null
+    private var isInitialLoad = true
 
     private val navOptions = NavOptions.Builder()
         .setEnterAnim(R.anim.slide_in_right)
@@ -101,14 +123,30 @@ class HomeFragment : Fragment() {
         .build()
 
     private var navController: NavController? = null
-    private var chosenCuisine: String? = null
-    private var chosenCategories: String? = null
+    private var recipeId: String = "52772"
 
     private lateinit var categoriesAdapter: AdapterRVCategories
     private lateinit var categoriesItemAdapter: AdapterRVItemMeal
     private lateinit var recommendationsAdapter: AdapterRVItemMeal
     private lateinit var cuisineAdapter: AdapterRVItemMeal
-    private lateinit var goldAdapter: AdapterRVItemMeal
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) {
+            homeViewModel.getFilteredMealsByAreas("Egyptian")
+            homeViewModel.getFilteredMealsByCategory("Beef")
+            homeViewModel.getRandomMeal()
+            homeViewModel.getRandomMeals(10)
+            homeViewModel.getCategories()
+            isDataLoaded = true
+            isCategoriesLoaded = true
+            isInitialLoad = true
+        } else {
+            selectedCategory = savedInstanceState.getString("selectedCategory", "Beef")
+            isInitialLoad = false
+            isCategoriesLoaded = true
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -117,16 +155,10 @@ class HomeFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
         initializeUi(view)
-        checkConnection()
-        loadDefaultMeals()
-
-        homeViewModel.getFilteredMealsByAreas("Egyptian")
-        textViewCuisines.text = "Egyptian Recipes for you"
-
-        homeViewModel.getRandomMeal()
+        textViewCuisines.text = "Egyptian Meals"
 
         searchBarHome.setOnClickListener {
-            recipeViewModel.navigateTo(R.id.nav_search)
+            recipeViewModel.navigateTo(R.id.action_search)
         }
 
         btnCuisines.setOnClickListener {
@@ -136,36 +168,102 @@ class HomeFragment : Fragment() {
         return view
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        initObservers()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        selectedCategory?.let {
+            outState.putString("selectedCategory", it)
+        }
+    }
+
+    private fun initializeUi(view: View) {
+        recyclerViewCategories = view.findViewById(R.id.recyclerview_categories)
+        recyclerViewCategoriesItems = view.findViewById(R.id.recyclerview_mealByCategories)
+        recyclerViewRecommendations = view.findViewById(R.id.recyclerview_recommendations)
+        recyclerViewCuisine = view.findViewById(R.id.recyclerview_meal_by_fav_cuisine)
+
+        shimmerCategories = view.findViewById(R.id.shimmer_categories)
+        shimmerCategoriesItem = view.findViewById(R.id.shimmer_mealbycategories)
+        shimmerRecommendations = view.findViewById(R.id.shimmer_recommendations)
+        shimmerCuisine = view.findViewById(R.id.shimmer_meal_by_fav_cuisine)
+
+        cardViewFreeTrial = view.findViewById(R.id.cardViewFreeTrial)
+        mealImage = cardViewFreeTrial.findViewById(R.id.meal_image)
+
+        btnAddToPlan = view.findViewById(R.id.btn_add_to_plan)
+        btnDrawer = view.findViewById(R.id.btnHomeDrawer)
+        textViewCuisines = view.findViewById(R.id.textViewCuisines)
+
+        btnAddToPlan.setOnClickListener {
+            mealOfTheDay?.let { meal ->
+                showAddToPlanDialog(meal)
+            } ?: run {
+                Toast.makeText(requireContext(), "No meal available to add", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        categoriesAdapter = AdapterRVCategories(listOf()) { name -> goToSearchCategories(name) }
+        categoriesItemAdapter = AdapterRVItemMeal(
+            listOf(),
+            { id -> goToDetails(id) },
+            { id, isChange, onComplete -> changeFavouriteState(id, isChange, onComplete) },
+            { meal -> showAddToPlanDialog(meal) }
+        )
+        recommendationsAdapter = AdapterRVItemMeal(
+            listOf(),
+            { id -> goToDetails(id) },
+            { id, isChange, onComplete -> changeFavouriteState(id, isChange, onComplete) },
+            { meal -> showAddToPlanDialog(meal) }
+        )
+        cuisineAdapter = AdapterRVItemMeal(
+            listOf(),
+            { id -> goToDetails(id) },
+            { id, isChange, onComplete -> changeFavouriteState(id, isChange, onComplete) },
+            { meal -> showAddToPlanDialog(meal) }
+        )
+        recyclerViewCategories.adapter = categoriesAdapter
+        recyclerViewCategoriesItems.adapter = categoriesItemAdapter
+        recyclerViewRecommendations.adapter = recommendationsAdapter
+        recyclerViewCuisine.adapter = cuisineAdapter
+
+        setupRecyclerView(recyclerViewCategories)
+        setupRecyclerView(recyclerViewCategoriesItems)
+        setupRecyclerView(recyclerViewRecommendations)
+        setupRecyclerView(recyclerViewCuisine)
+
+        btnCuisines = view.findViewById(R.id.btnCuisines)
+        popup = PopupMenu(requireContext(), btnCuisines)
+        setupCuisinesPopup()
+
+        drawer = requireActivity().findViewById(R.id.drawer)
+        searchBarHome = view.findViewById(R.id.searchBar_home)
+
+        btnDrawer.setOnClickListener {
+            drawer.openDrawer(GravityCompat.START)
+        }
+
+        navController = requireActivity().supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
+            ?.findNavController()
+    }
+
     private fun initObservers() {
+        dataViewModel.isFavourite.observe(viewLifecycleOwner, Observer { isFavourite ->
+            favouriteState = isFavourite
+        })
 
         dataViewModel.categorySearch.observe(viewLifecycleOwner) { category ->
             category?.let {
-                homeViewModel.getFilteredMealsByCategory(it)
-            }
-        }
-
-        /*with(dataViewModel) {
-            mainCuisine.observe(viewLifecycleOwner) { mainCuisine ->
-                mainCuisine?.let { homeFavCuisines(it) }
-            }
-        }
-
-        with(dataViewModel) {
-            isSubscribed.observe(viewLifecycleOwner) { subscribed ->
-                subscribed?.let {
-                    when (it) {
-                        true -> {
-                            cardViewFreeTrial.visibility = View.GONE
-                            constraintLayoutGold.visibility = View.VISIBLE
-                        }
-                        false -> {
-                            cardViewFreeTrial.visibility = View.VISIBLE
-                            constraintLayoutGold.visibility = View.GONE
-                        }
-                    }
+                if (isInitialLoad) {
+                    selectedCategory = it
+                    homeViewModel.getFilteredMealsByCategory(it) // تحميل التصنيف الأولي
+                    isInitialLoad = false
                 }
             }
-        }*/
+        }
 
         with(dataViewModel) {
             cuisinesData.observe(viewLifecycleOwner) { data ->
@@ -179,15 +277,20 @@ class HomeFragment : Fragment() {
             randomMeal.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
-                        // إظهار مؤشر تحميل إذا لزم الأمر
+                        btnAddToPlan.isEnabled = false
                     }
                     is Response.Success -> {
                         val meal = response.data
+                        recipeId = meal.idMeal
                         updateFreeTrialCard(meal)
+                        mealImage.setOnClickListener {
+                            goToDetails(recipeId)
+                        }
+                        btnAddToPlan.isEnabled = true
                     }
                     is Response.Failure -> {
-                        // التعامل مع الفشل
                         Log.e("HomeFragment", "Failed to load random meal")
+                        btnAddToPlan.isEnabled = false
                     }
                 }
             }
@@ -195,7 +298,6 @@ class HomeFragment : Fragment() {
 
         // Handle categories
         with(homeViewModel) {
-            getCategories()
             dataCategories.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> shimmerCategories.startShimmer()
@@ -204,81 +306,37 @@ class HomeFragment : Fragment() {
                         shimmerCategories.visibility = View.GONE
                         categoriesAdapter.submitList(response.data.categories)
                     }
-                    is Response.Failure -> createFailureResponse(response, requireContext()) {
-                        getCategories()
-                    }
-                }
-            }
-        }
-        // Handle random meals for categories
-        with(homeViewModel) {
-            defaultMeals.observe(viewLifecycleOwner) { response ->
-                when (response) {
-                    is Response.Loading -> shimmerCategoriesItem.startShimmer()
-                    is Response.Success -> {
-                        shimmerCategoriesItem.stopShimmer()
-                        shimmerCategoriesItem.visibility = View.GONE
-                        Log.d("HomeFragment", "Default Meals: ${response.data}")
-                        if (response.data.isNotEmpty()) {
-                            categoriesItemAdapter.submitList(response.data)
-                        } else {
-                            Log.d("HomeFragment", "No default meals found")
-                        }
-                    }
                     is Response.Failure -> {
-                        createFailureResponse(response, requireContext()) {
-                            loadDefaultMeals()
+                        if (!isCategoriesLoaded) {
+                            getCategories()
+                            isCategoriesLoaded = true
                         }
-                        Log.d("HomeFragment", "Failed to load default meals")
                     }
                 }
             }
         }
-        // Handle filter meals for categories
+
+        // Handle meals for categories (Beef by default, updated on manual change)
         with(homeViewModel) {
-            Log.d("HomeFragment", "Filtered Meals")
             filteredMealsByCategory.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> shimmerCategoriesItem.startShimmer()
                     is Response.Success -> {
                         shimmerCategoriesItem.stopShimmer()
                         shimmerCategoriesItem.visibility = View.GONE
-                        Log.d("HomeFragment", "Filtered Meals: ${response.data.meals}")
                         if (response.data.meals.isNotEmpty()) {
                             categoriesItemAdapter.submitList(response.data.meals)
-                        } else {
-                            Log.d("HomeFragment", "No meals found for this category")
                         }
                     }
-                    is Response.Failure -> createFailureResponse(response, requireContext()) {
-                        getFilteredMealsByCategory("Chicken")
-                        Log.d("HomeFragment", "No meals found for this category")
+                    is Response.Failure -> {
+                        homeViewModel.getFilteredMealsByCategory("Beef")
                     }
                 }
             }
         }
 
-       /* // Handle cuisine meals
-        with(homeViewModel) {
-            chosenCuisine?.let { getFilteredMealsByAreas(it) }
-            filteredMealsByAreas.observe(viewLifecycleOwner) { response ->
-                when (response) {
-                    is Response.Loading -> shimmerCuisine.startShimmer()
-                    is Response.Success -> {
-                        shimmerCuisine.stopShimmer()
-                        shimmerCuisine.visibility = View.GONE
-                        cuisineAdapter.submitList(response.data.meals)
-                    }
-                    is Response.Failure -> createFailureResponse(response, requireContext()) {
-                        chosenCuisine?.let { getFilteredMealsByAreas(it) }
-                    }
-                }
-            }
-        }*/
-
         // Handle random meals for recommendations
         with(homeViewModel) {
-            getRandomMeals(10)
             someRecommendedMeals.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> shimmerRecommendations.startShimmer()
@@ -287,31 +345,12 @@ class HomeFragment : Fragment() {
                         shimmerRecommendations.visibility = View.GONE
                         recommendationsAdapter.submitList(response.data)
                     }
-                    is Response.Failure -> createFailureResponse(response, requireContext()) {
+                    is Response.Failure -> {
                         getRandomMeals(10)
                     }
                 }
             }
         }
-
-        /*// Handle random meals for gold
-        with(homeViewModel)
-        {
-            getRandomMeals(5, true)
-            someGoldMeals.observe(viewLifecycleOwner) { response ->
-                when (response) {
-                    is Response.Loading -> shimmerGold.startShimmer()
-                    is Response.Success -> {
-                        shimmerGold.stopShimmer()
-                        shimmerGold.visibility = View.GONE
-                        goldAdapter.submitList(response.data)
-                    }
-                    is Response.Failure -> createFailureResponse(response, requireContext()) {
-                        getRandomMeals(5, true)
-                    }
-                }
-            }
-        }*/
 
         // Handle user cuisines
         with(homeViewModel) {
@@ -321,109 +360,16 @@ class HomeFragment : Fragment() {
                     is Response.Success -> {
                         shimmerCuisine.stopShimmer()
                         shimmerCuisine.visibility = View.GONE
-                        Log.d("HomeFragment", "Filtered Meals: ${response.data.meals}")
                         if (response.data.meals.isNotEmpty()) {
                             cuisineAdapter.submitList(response.data.meals)
-                        } else {
-                            Log.d("HomeFragment", "No meals found for this cuisine")
                         }
                     }
                     is Response.Failure -> {
-                        createFailureResponse(response, requireContext()) {
-                            // إعادة المحاولة
-                        }
-                        Log.d("HomeFragment", "Failed to load meals for this cuisine")
+                        homeViewModel.getFilteredMealsByAreas("Egyptian")
                     }
                 }
             }
         }
-
-
-        /*// Handle user cuisines
-        with(homeViewModel) {
-            getUserCuisines()
-            userCuisines.observe(viewLifecycleOwner) { response ->
-                when (response) {
-                    is Response.Loading -> shimmerCuisine.startShimmer()
-                    is Response.Success -> {
-                        val data = response.data
-                        if (!data.isNullOrEmpty()) {
-                            popup.menu.clear()
-                            dataViewModel.updateMainCuisine(data[0])
-                            dataViewModel.setCuisines(data)
-                        } else {
-
-                        }
-                    }
-
-                    is Response.Failure -> createFailureResponse(response, requireContext()) {
-                        getUserCuisines()
-                    }
-                }
-            }
-        }*/
-    }
-
-    private fun initializeUi(view: View) {
-        recyclerViewCategories = view.findViewById(R.id.recyclerview_categories)
-        recyclerViewCategoriesItems= view.findViewById(R.id.recyclerview_mealByCategories)
-        recyclerViewRecommendations = view.findViewById(R.id.recyclerview_recommendations)
-        recyclerViewCuisine = view.findViewById(R.id.recyclerview_meal_by_fav_cuisine)
-//        recyclerViewGold = view.findViewById(R.id.recyclerviewGold)
-
-        shimmerCategories = view.findViewById(R.id.shimmer_categories)
-        shimmerCategoriesItem= view.findViewById(R.id.shimmer_mealbycategories)
-        shimmerRecommendations = view.findViewById(R.id.shimmer_recommendations)
-        shimmerCuisine = view.findViewById(R.id.shimmer_meal_by_fav_cuisine)
-//        shimmerGold = view.findViewById(R.id.shimmerGold)
-
-//        constraintLayoutGold = view.findViewById(R.id.constraintlayoutGold)
-        cardViewFreeTrial = view.findViewById(R.id.cardViewFreeTrial)
-
-        btnAddToPlan = view.findViewById(R.id.btn_add_to_plan)
-        btnDrawer = view.findViewById(R.id.btnHomeDrawer)
-        textViewCuisines = view.findViewById(R.id.textViewCuisines)
-
-        categoriesAdapter = AdapterRVCategories(listOf()) { name -> goToSearchCategories(name) }
-        categoriesItemAdapter= AdapterRVItemMeal(listOf()) { id -> goToDetails(id) }
-        recommendationsAdapter = AdapterRVItemMeal(listOf()) { id -> goToDetails(id) }
-        cuisineAdapter = AdapterRVItemMeal(listOf()) { id -> goToDetails(id) }
-//        goldAdapter = AdapterRVItemMeal(listOf()) { id -> goToDetails(id) }
-
-        recyclerViewCategories.adapter = categoriesAdapter
-        recyclerViewCategoriesItems.adapter= categoriesItemAdapter
-        recyclerViewRecommendations.adapter = recommendationsAdapter
-        recyclerViewCuisine.adapter = cuisineAdapter
-//        recyclerViewGold.adapter = goldAdapter
-
-        setupRecyclerView(recyclerViewCategories)
-        setupRecyclerView(recyclerViewCategoriesItems)
-        setupRecyclerView(recyclerViewRecommendations)
-        setupRecyclerView(recyclerViewCuisine)
-//        setupRecyclerView(recyclerViewGold)
-
-        btnCuisines = view.findViewById(R.id.btnCuisines)
-        popup = PopupMenu(requireContext(), btnCuisines)
-        setupCuisinesPopup()
-
-
-       /* popup = PopupMenu(requireContext(), btnCuisines).apply {
-            setOnMenuItemClickListener { item ->
-                homeFavCuisines(item.title.toString())
-                true
-            }
-        }*/
-
-        drawer = requireActivity().findViewById(R.id.drawer)
-        searchBarHome = view.findViewById(R.id.searchBar_home)
-
-        btnDrawer.setOnClickListener {
-            drawer.openDrawer(GravityCompat.START)
-        }
-
-        navController =
-            requireActivity().supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
-                ?.findNavController()
     }
 
     private fun setupRecyclerView(recyclerView: RecyclerView) {
@@ -431,43 +377,29 @@ class HomeFragment : Fragment() {
             LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
     }
 
-    /*private fun homeFavCuisines(cuisine: String) {
-        chosenCuisine = cuisine
-        homeViewModel.getFilteredMealsByAreas(cuisine)
-        textViewCuisines.text = "$cuisine Recipes for you"
-    }
-    private fun homeFavCategories(cuisine: String) {
-        chosenCategories = cuisine
-        homeViewModel.getFilteredMealsByCategory(cuisine)
-    }
-*/
     private fun goToDetails(id: String) {
         dataViewModel.setItemDetails(id)
-        navController?.navigate(R.id.detailsFragment, null, navOptions)
+        navController?.navigate(R.id.action_details, null, navOptions)
     }
 
     private fun goToSearchCategories(name: String) {
-        dataViewModel.updateSearchCategory(name)
-        homeViewModel.getFilteredMealsByCategory(name)
-    }
-
-    private fun checkConnection() {
-        if (!SystemChecks.isNetworkAvailable(requireContext())) {
-            createMaterialAlertDialogBuilderOk(
-                requireContext(),
-                "No Internet Connection",
-                "Please check your internet connection and try again",
-                "Retry",
-            ) {
-                checkConnection()
-            }
-        } else {
-            initObservers()
+        if (selectedCategory != name) {
+            selectedCategory = name
+            dataViewModel.updateSearchCategory(name)
+            homeViewModel.getFilteredMealsByCategory(name)
         }
     }
 
-    private fun loadDefaultMeals() {
-        homeViewModel.getDefaultMeals(10) // تحميل 10 وجبات افتراضية
+    private fun changeFavouriteState(
+        recipeId: String,
+        isChange: Boolean,
+        onComplete: (Boolean) -> Unit
+    ) {
+        dataViewModel.viewModelScope.launch {
+            dataViewModel.changeFavouriteState(recipeId, isChange)
+        }.invokeOnCompletion {
+            onComplete(favouriteState)
+        }
     }
 
     private fun setupCuisinesPopup() {
@@ -476,16 +408,13 @@ class HomeFragment : Fragment() {
         homeViewModel.allCuisines.observe(viewLifecycleOwner) { response ->
             when (response) {
                 is Response.Loading -> {
-
                     Log.d("HomeFragment", "Loading cuisines...")
                 }
                 is Response.Success -> {
                     response.data.let { cuisines ->
                         popup.menu.clear()
-                        homeViewModel
                         cuisines.forEachIndexed { index, cuisine ->
                             popup.menu.add(0, index, 0, cuisine)
-
                         }
                     }
                 }
@@ -502,22 +431,35 @@ class HomeFragment : Fragment() {
         popup.setOnMenuItemClickListener { item ->
             val selectedCuisine = item.title.toString()
             homeViewModel.getFilteredMealsByAreas(selectedCuisine)
-            textViewCuisines.text = "$selectedCuisine Recipes for you"
+            textViewCuisines.text = "$selectedCuisine Meals"
             true
         }
     }
+
     private fun updateFreeTrialCard(meal: Meal?) {
         meal?.let {
-            // عرض اسم الوجبة
             val textViewMealName = cardViewFreeTrial.findViewById<TextView>(R.id.meal_name)
             textViewMealName.text = it.strMeal
-
 
             val imageViewMeal = cardViewFreeTrial.findViewById<ImageView>(R.id.meal_image)
             Glide.with(requireContext())
                 .load(it.strMealThumb)
                 .into(imageViewMeal)
+
+            mealOfTheDay = it
         }
     }
 
+    private fun showAddToPlanDialog(meal: Meal) {
+        val days = arrayOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+        AlertDialog.Builder(requireContext())
+            .setTitle("What day would you like to add ${meal.strMeal} ?")
+            .setItems(days) { _, which ->
+                val selectedDay = days[which]
+                mealPlanViewModel.addMealToPlan(selectedDay, meal)
+                Toast.makeText(requireContext(), "${meal.strMeal} added to $selectedDay", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
 }

@@ -1,91 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".Fragments.SearchFragment"
-    android:background="@color/white">
+    android:orientation="vertical"
+    android:padding="16dp"
+    >
 
-    <LinearLayout
+    <!-- حقل البحث -->
+    <EditText
+        android:id="@+id/etSearch"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="16dp"
-        >
+        android:layout_height="wrap_content"
+        android:hint="Search for a meal..."
+        android:inputType="text"
+        android:imeOptions="actionSearch"
+        android:padding="12dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/edit_text_background" />
 
-        <!-- Search Bar -->
-        <EditText
-            android:id="@+id/searchBar"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:hint="Search for a meal..."
-            android:drawableStart="@drawable/search3"
-            android:background="@drawable/search_bar_bg"
-            android:padding="15dp"
-            android:drawablePadding="8dp"/>
+    <!-- HorizontalScrollView لاحتواء الـ Chips -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
 
-        <!-- Filter Buttons -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <!-- ChipGroup لاحتواء الـ Chips -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/cgSearchType"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:paddingTop="10dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            >
+            android:padding="8dp"
+            app:singleSelection="true">
 
-            <Button
-                android:id="@+id/btnFilterCategory"
-                android:layout_width="0dp"
+            <!-- Chip للدول -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCountry"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Category"
-                android:textColor="@color/black"
-                android:backgroundTint="@color/background"
-                app:strokeColor="@color/textColor"
-                app:strokeWidth="2dp"
-                app:cornerRadius="12dp"
-                />
-
-            <Button
-                android:id="@+id/btnFilterCountry"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="Country"
-                android:textColor="@color/black"
-                android:backgroundTint="@color/background"
-                app:strokeColor="@color/textColor"
-                app:strokeWidth="2dp"
-                app:cornerRadius="12dp"
-                android:layout_marginEnd="12dp"
-                android:layout_marginStart="12dp"
-                />
+                android:padding="8dp"
+                app:chipIconTint="@android:color/darker_gray"
+                app:closeIconEnabled="true"
+                app:closeIconTint="@android:color/darker_gray"
+                style="@style/Widget.MaterialComponents.Chip.Filter" />
 
-            <Button
-                android:id="@+id/btnFilterIngredient"
-                android:layout_width="0dp"
+            <!-- Chip للمكونات -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipIngredient"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="Ingredient"
-                android:textColor="@color/black"
-                android:backgroundTint="@color/background"
-                app:strokeColor="@color/textColor"
-                app:strokeWidth="2dp"
-                app:cornerRadius="12dp"/>
+                android:padding="8dp"
+                app:chipIconTint="@android:color/darker_gray"
+                app:closeIconEnabled="true"
+                app:closeIconTint="@android:color/darker_gray"
+                style="@style/Widget.MaterialComponents.Chip.Filter" />
 
-        </LinearLayout>
+            <!-- Chip للفئات -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCategory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Category"
+                android:padding="8dp"
+                app:chipIconTint="@android:color/darker_gray"
+                app:closeIconEnabled="true"
+                app:closeIconTint="@android:color/darker_gray"
+                style="@style/Widget.MaterialComponents.Chip.Filter" />
 
-        <!-- Search Results (RecyclerView) -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerViewSearchResults"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingTop="10dp"/>
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
 
-    </LinearLayout>
+    <!-- ProgressBar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
 
+    <!-- RecyclerView لعرض الوجبات -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvMeals"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-</FrameLayout>
+</LinearLayout>

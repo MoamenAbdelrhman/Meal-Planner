@@ -2,6 +2,8 @@ package com.example.foodplanner.core.model.local.repository
 
 import com.example.foodplanner.core.model.local.User
 import com.example.foodplanner.core.model.local.source.UserDao
+import com.example.foodplanner.core.model.remote.IngredientResponse
+import com.example.foodplanner.core.model.remote.source.GsonApi
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 
@@ -46,6 +48,9 @@ interface UserRepository {
 
     fun getCurrentUser(): User?
 
+    suspend fun getCurrentUserId(): String?
+
     suspend fun saveUserToLocalDatabase(user: User)
+
 
 }
