@@ -4,10 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:layout_marginTop="20dp"
+    android:paddingHorizontal="16dp"
     >
-
-    <!-- حقل البحث -->
     <EditText
         android:id="@+id/etSearch"
         android:layout_width="match_parent"
@@ -16,54 +15,46 @@
         android:inputType="text"
         android:imeOptions="actionSearch"
         android:padding="12dp"
-        android:layout_marginBottom="10dp"
+        android:layout_marginBottom="5dp"
         android:background="@drawable/edit_text_background" />
 
-    <!-- HorizontalScrollView لاحتواء الـ Chips -->
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:scrollbars="none">
 
-        <!-- ChipGroup لاحتواء الـ Chips -->
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/cgSearchType"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="8dp"
+            android:paddingHorizontal="8dp"
             app:singleSelection="true">
 
-            <!-- Chip للدول -->
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipCountry"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Country"
-                android:padding="8dp"
                 app:chipIconTint="@android:color/darker_gray"
                 app:closeIconEnabled="true"
                 app:closeIconTint="@android:color/darker_gray"
                 style="@style/Widget.MaterialComponents.Chip.Filter" />
 
-            <!-- Chip للمكونات -->
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipIngredient"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Ingredient"
-                android:padding="8dp"
                 app:chipIconTint="@android:color/darker_gray"
                 app:closeIconEnabled="true"
                 app:closeIconTint="@android:color/darker_gray"
                 style="@style/Widget.MaterialComponents.Chip.Filter" />
 
-            <!-- Chip للفئات -->
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipCategory"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Category"
-                android:padding="8dp"
                 app:chipIconTint="@android:color/darker_gray"
                 app:closeIconEnabled="true"
                 app:closeIconTint="@android:color/darker_gray"
@@ -72,7 +63,6 @@
         </com.google.android.material.chip.ChipGroup>
     </HorizontalScrollView>
 
-    <!-- ProgressBar -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
@@ -80,7 +70,6 @@
         android:layout_gravity="center"
         android:visibility="gone" />
 
-    <!-- RecyclerView لعرض الوجبات -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvMeals"
         android:layout_width="match_parent"

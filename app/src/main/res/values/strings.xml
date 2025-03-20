@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Meal Plan</string>
+    <string name="app_name">Meal Planner</string>
     <string name="static_fragment">Static fragment</string>
     <string name="default_client_id">1:144709281679:android:7b00d2b0ebdb484ce88dfa</string>
     <string name="default_web_client_id" translatable="false">144709281679-qhg4pplir4prusa5752v8qjajt3qh4f6.apps.googleusercontent.com</string>

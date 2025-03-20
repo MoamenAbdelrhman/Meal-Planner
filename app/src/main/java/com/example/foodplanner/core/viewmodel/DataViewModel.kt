@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodplanner.core.model.FavouriteMealDao
+import com.example.foodplanner.core.model.FavouriteMealEntity
 import com.example.foodplanner.core.model.local.repository.UserRepository
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
@@ -18,6 +19,10 @@ import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
 import com.example.foodplanner.core.model.toFavouriteMealEntity
 import com.example.foodplanner.core.model.toMeal
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.ChildEventListener
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
 
 class DataViewModel(
@@ -58,6 +63,7 @@ class DataViewModel(
     val cuisinesData: LiveData<List<String>> get() = _cuisinesData
 
     private var currentUserId: String? = null
+    private var favoritesListener: ChildEventListener? = null
 
     init {
         _categorySearch.value = null
@@ -79,11 +85,47 @@ class DataViewModel(
         }
     }
 
-    fun setCuisines(cuisines: List<String>) {
-        _cuisinesData.value = cuisines
-        viewModelScope.launch {
-            userRepository.updateCuisines(cuisines)
+    // بدء المزامنة مع Firebase
+    fun startFavoritesSync(userId: String) {
+        currentUserId = userId
+        val favoritesRef = FirebaseDatabase.getInstance().getReference("/users/$userId/favorites")
+        favoritesListener = object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                val meal = snapshot.getValue(Meal::class.java)
+                meal?.let {
+                    viewModelScope.launch {
+                        favouriteMealDao.insertFavouriteMeal(it.toFavouriteMealEntity(userId))
+                        loadFavoriteItems()
+                    }
+                }
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                val mealId = snapshot.key
+                mealId?.let {
+                    viewModelScope.launch {
+                        favouriteMealDao.deleteFavouriteMeal(it, userId)
+                        loadFavoriteItems()
+                    }
+                }
+            }
+
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("DataViewModel", "فشل في مزامنة الوجبات المفضلة", error.toException())
+            }
         }
+        favoritesRef.addChildEventListener(favoritesListener!!)
+    }
+
+    // إيقاف المزامنة
+    fun stopFavoritesSync() {
+        currentUserId?.let { uid ->
+            val favoritesRef = FirebaseDatabase.getInstance().getReference("/users/$uid/favorites")
+            favoritesListener?.let { favoritesRef.removeEventListener(it) }
+        }
+        favoritesListener = null
     }
 
     private fun loadFavoriteItems() {
@@ -115,12 +157,16 @@ class DataViewModel(
             var currentFavouriteState = currentFavourites.contains(recipeId)
             if (isChange) {
                 if (currentFavouriteState) {
-                    currentFavourites.remove(recipeId)
+                    // حذف من Firebase و Room
+                    FirebaseDatabase.getInstance().getReference("/users/$userId/favorites/$recipeId").removeValue()
                     favouriteMealDao.deleteFavouriteMeal(recipeId, userId)
                     Log.d("DataViewModel", "Deleted meal $recipeId from favourites for user $userId")
+                    currentFavourites.remove(recipeId)
                     currentFavouriteState = false
                 } else {
+                    // إضافة إلى Firebase و Room
                     val meal = mealRepository.getMealById(recipeId)
+                    FirebaseDatabase.getInstance().getReference("/users/$userId/favorites/$recipeId").setValue(meal)
                     val favouriteMeal = meal.toFavouriteMealEntity(userId)
                     favouriteMealDao.insertFavouriteMeal(favouriteMeal)
                     Log.d("DataViewModel", "Added meal $recipeId to favourites for user $userId")
@@ -139,11 +185,19 @@ class DataViewModel(
         Log.d("DataViewModel", "Updated search category: $category")
     }
 
-    fun updateMainCuisine(cuisine: String?) {
-        _mainCuisine.value = cuisine
-    }
-
     fun setItemDetails(id: String) {
         _itemDetails.value = id
+    }
+
+    fun setCuisines(cuisines: List<String>) {
+        _cuisinesData.value = cuisines
+        viewModelScope.launch {
+            userRepository.updateCuisines(cuisines)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopFavoritesSync()
     }
 }

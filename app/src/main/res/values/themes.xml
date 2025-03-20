@@ -1,8 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.FoodPlanner" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    <!-- Base application theme -->
+    <style name="Base.Theme.FoodPlanner" parent="Theme.Material3.Light.NoActionBar">
+        
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <!-- Disable Force Dark Mode -->
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
 
     <style name="Theme.FoodPlanner" parent="Base.Theme.FoodPlanner" />
@@ -25,8 +27,6 @@
     </style>
 
     <style name="entrydata">
-        <item name="android:background">
-            @drawable/entrydata
-        </item>
+        <item name="android:background">@drawable/entrydata</item>
     </style>
 </resources>

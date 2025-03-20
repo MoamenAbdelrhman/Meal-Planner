@@ -147,6 +147,32 @@ class HomeFragmentViewModel(
         }
     }
 
+    fun getRandomCategory(onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val categoriesResponse = mealRepository.getCategories()
+                val randomCategory = categoriesResponse.categories.random().strCategory
+                onResult(randomCategory)
+            } catch (e: Exception) {
+                Log.e("HomeFragmentViewModel", "Failed to fetch random category: ${e.message}")
+                onResult("Beef")
+            }
+        }
+    }
+
+    fun getRandomCuisine(onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val cuisinesResponse = mealRepository.getAllCuisines()
+                val randomCuisine = cuisinesResponse.random()
+                onResult(randomCuisine)
+            } catch (e: Exception) {
+                Log.e("HomeFragmentViewModel", "Failed to fetch random cuisine: ${e.message}")
+                onResult("Egyptian")
+            }
+        }
+    }
+
     private fun <T> applyResponse(
         liveData: MutableLiveData<Response<T>>,
         dataFetch: suspend () -> T

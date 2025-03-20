@@ -1,87 +1,84 @@
 package com.example.foodplanner.core.model.remote
 
+import com.google.firebase.firestore.Exclude
+
 data class Meal(
-    val idMeal: String,
-    val strMeal: String,
-    val strDrinkAlternate: String?,
-    val strCategory: String,
-    val strArea: String,
-    val strInstructions: String,
-    val strMealThumb: String,
-    val strTags: String?,
-    val strYoutube: String,
-    val strIngredient1: String?,
-    val strIngredient2: String?,
-    val strIngredient3: String?,
-    val strIngredient4: String?,
-    val strIngredient5: String?,
-    val strIngredient6: String?,
-    val strIngredient7: String?,
-    val strIngredient8: String?,
-    val strIngredient9: String?,
-    val strIngredient10: String?,
-    val strIngredient11: String?,
-    val strIngredient12: String?,
-    val strIngredient13: String?,
-    val strIngredient14: String?,
-    val strIngredient15: String?,
-    val strIngredient16: String?,
-    val strIngredient17: String?,
-    val strIngredient18: String?,
-    val strIngredient19: String?,
-    val strIngredient20: String?,
-    val strMeasure1: String?,
-    val strMeasure2: String?,
-    val strMeasure3: String?,
-    val strMeasure4: String?,
-    val strMeasure5: String?,
-    val strMeasure6: String?,
-    val strMeasure7: String?,
-    val strMeasure8: String?,
-    val strMeasure9: String?,
-    val strMeasure10: String?,
-    val strMeasure11: String?,
-    val strMeasure12: String?,
-    val strMeasure13: String?,
-    val strMeasure14: String?,
-    val strMeasure15: String?,
-    val strMeasure16: String?,
-    val strMeasure17: String?,
-    val strMeasure18: String?,
-    val strMeasure19: String?,
-    val strMeasure20: String?,
-    val strSource: String?,
-    val strImageSource: String?,
-    val strCreativeCommonsConfirmed: String?,
-    val dateModified: String?,
-    var listIngredientsWithMeasures: List<Pair<String, String>> = emptyList(), // تغيير النوع هنا
-)
+    val idMeal: String = "",
+    val strMeal: String = "",
+    val strCategory: String = "",
+    val strArea: String = "",
+    val strInstructions: String = "",
+    val strMealThumb: String = "",
+    val strYoutube: String = "",
+    val strIngredient1: String? = null,
+    val strIngredient2: String? = null,
+    val strIngredient3: String? = null,
+    val strIngredient4: String? = null,
+    val strIngredient5: String? = null,
+    val strIngredient6: String? = null,
+    val strIngredient7: String? = null,
+    val strIngredient8: String? = null,
+    val strIngredient9: String? = null,
+    val strIngredient10: String? = null,
+    val strIngredient11: String? = null,
+    val strIngredient12: String? = null,
+    val strIngredient13: String? = null,
+    val strIngredient14: String? = null,
+    val strIngredient15: String? = null,
+    val strIngredient16: String? = null,
+    val strIngredient17: String? = null,
+    val strIngredient18: String? = null,
+    val strIngredient19: String? = null,
+    val strIngredient20: String? = null,
+    val strMeasure1: String? = null,
+    val strMeasure2: String? = null,
+    val strMeasure3: String? = null,
+    val strMeasure4: String? = null,
+    val strMeasure5: String? = null,
+    val strMeasure6: String? = null,
+    val strMeasure7: String? = null,
+    val strMeasure8: String? = null,
+    val strMeasure9: String? = null,
+    val strMeasure10: String? = null,
+    val strMeasure11: String? = null,
+    val strMeasure12: String? = null,
+    val strMeasure13: String? = null,
+    val strMeasure14: String? = null,
+    val strMeasure15: String? = null,
+    val strMeasure16: String? = null,
+    val strMeasure17: String? = null,
+    val strMeasure18: String? = null,
+    val strMeasure19: String? = null,
+    val strMeasure20: String? = null
+) {
+    @Exclude
+    var listIngredientsWithMeasures: List<IngredientWithMeasure> = emptyList()
 
-fun Meal.getIngredientsWithMeasurements(): List<Pair<String, String>> {
-    val ingredients = listOf(
-        strIngredient1 to strMeasure1,
-        strIngredient2 to strMeasure2,
-        strIngredient3 to strMeasure3,
-        strIngredient4 to strMeasure4,
-        strIngredient5 to strMeasure5,
-        strIngredient6 to strMeasure6,
-        strIngredient7 to strMeasure7,
-        strIngredient8 to strMeasure8,
-        strIngredient9 to strMeasure9,
-        strIngredient10 to strMeasure10,
-        strIngredient11 to strMeasure11,
-        strIngredient12 to strMeasure12,
-        strIngredient13 to strMeasure13,
-        strIngredient14 to strMeasure14,
-        strIngredient15 to strMeasure15,
-        strIngredient16 to strMeasure16,
-        strIngredient17 to strMeasure17,
-        strIngredient18 to strMeasure18,
-        strIngredient19 to strMeasure19,
-        strIngredient20 to strMeasure20
-    )
+    fun populateIngredientsWithMeasures() {
+        listIngredientsWithMeasures = getIngredientsWithMeasurements()
+    }
 
-    return ingredients
-        .filter { (ingredient, measure) -> !ingredient.isNullOrEmpty() && !measure.isNullOrEmpty() }
-        .map { (ingredient, measure) -> Pair(ingredient.orEmpty().trim(), measure.orEmpty().trim()) }
+    fun getIngredientsWithMeasurements(): List<IngredientWithMeasure> {
+        val ingredients = listOfNotNull(
+            strIngredient1, strIngredient2, strIngredient3, strIngredient4, strIngredient5,
+            strIngredient6, strIngredient7, strIngredient8, strIngredient9, strIngredient10,
+            strIngredient11, strIngredient12, strIngredient13, strIngredient14, strIngredient15,
+            strIngredient16, strIngredient17, strIngredient18, strIngredient19, strIngredient20
+        ).filter { it.isNotBlank() }
+
+        val measures = listOfNotNull(
+            strMeasure1, strMeasure2, strMeasure3, strMeasure4, strMeasure5,
+            strMeasure6, strMeasure7, strMeasure8, strMeasure9, strMeasure10,
+            strMeasure11, strMeasure12, strMeasure13, strMeasure14, strMeasure15,
+            strMeasure16, strMeasure17, strMeasure18, strMeasure19, strMeasure20
+        ).filter { it.isNotBlank() }
+
+        return ingredients.mapIndexedNotNull { index, ingredient ->
+            if (index < measures.size) {
+                IngredientWithMeasure(ingredient, measures[index])
+            } else {
+                null
+            }
+        }
+    }
 }

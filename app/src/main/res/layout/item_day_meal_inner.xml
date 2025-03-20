@@ -15,25 +15,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         >
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardViewT"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="12dp"
-            app:strokeWidth="0.5dp"
-            android:layout_margin="1dp"
-            android:layout_marginBottom="5dp"
-            app:cardBackgroundColor="@color/white"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
             <ImageView
                 android:id="@+id/ivMealImage"
                 android:layout_width="260dp"
                 android:layout_height="180dp"
                 android:scaleType="centerCrop"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 />
 
             <ImageButton
@@ -46,10 +35,9 @@
                 android:layout_marginEnd="5dp"
                 android:layout_gravity="end"
                 android:src="@android:drawable/ic_menu_close_clear_cancel"
-                app:layout_constraintEnd_toEndOf="@id/cardViewT"
-                app:layout_constraintTop_toTopOf="@id/cardViewT" />
+                app:layout_constraintEnd_toEndOf="@id/ivMealImage"
+                app:layout_constraintTop_toTopOf="@id/ivMealImage" />
 
-        </com.google.android.material.card.MaterialCardView>
 
 
         <TextView
@@ -70,7 +58,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/cardViewT" />
+            app:layout_constraintTop_toBottomOf="@id/ivMealImage" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

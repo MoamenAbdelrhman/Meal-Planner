@@ -16,7 +16,6 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
@@ -41,7 +40,6 @@ import com.example.foodplanner.details.viewmodel.DetailsFactory
 import com.example.foodplanner.details.viewmodel.DetailsViewModel
 import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModel
 import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModelFactory
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.card.MaterialCardView
 import com.google.firebase.auth.FirebaseAuth
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
@@ -49,6 +47,11 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.Abs
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.FullscreenListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+import android.text.SpannableStringBuilder
+import android.text.style.StyleSpan
+import android.text.style.ForegroundColorSpan
+import android.graphics.Typeface
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
 
 class DetailsFragment : Fragment() {
@@ -98,10 +101,9 @@ class DetailsFragment : Fragment() {
     private var favouriteImage: ImageView? = null
     private lateinit var ingredientsArrow: ImageView
     private lateinit var instructionsArrow: ImageView
-    private lateinit var bottomNavigationView: BottomNavigationView
-    private lateinit var btnShare: ImageButton // زر المشاركة
-    private lateinit var btnAddToPlanDetails: Button // زر الإضافة إلى الخطة
-    private var currentMeal: Meal? = null // لتخزين الوجبة الحالية
+    private lateinit var btnShare: ImageButton
+    private lateinit var btnAddToPlanDetails: Button
+    private var currentMeal: Meal? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -133,7 +135,6 @@ class DetailsFragment : Fragment() {
         youtubePlayerView.enableAutomaticInitialization = false
         lifecycle.addObserver(youtubePlayerView)
 
-        bottomNavigationView = requireActivity().findViewById(R.id.bottom_navigation)
         navController = findNavController()
         ingredientsRecycler = requireView().findViewById(R.id.ingredientsRecycler)
         ingredientsAdapter = DetailsAdapter()
@@ -148,8 +149,15 @@ class DetailsFragment : Fragment() {
         mealCategory = requireView().findViewById(R.id.category)
         mealArea = requireView().findViewById(R.id.mealArea)
         instructionsText = requireView().findViewById(R.id.instructionsText)
-        btnShare = requireView().findViewById(R.id.btn_share) // تهيئة زر المشاركة
-        btnAddToPlanDetails = requireView().findViewById(R.id.btnAddToPlanDetails) // تهيئة زر الإضافة
+        btnShare = requireView().findViewById(R.id.btn_share)
+        btnAddToPlanDetails = requireView().findViewById(R.id.btnAddToPlanDetails)
+
+        // Make instructions collapsed by default
+        instructionsText.isVisible = false
+        instructionsArrow.rotation = 0f
+
+        // تحديد اتجاه RecyclerView
+        ingredientsRecycler.layoutManager = LinearLayoutManager(requireContext())
     }
 
     private fun initListeners() {
@@ -169,12 +177,10 @@ class DetailsFragment : Fragment() {
             instructionsArrow.rotation = if (instructionsText.isVisible) 180f else 0f
         }
 
-        // تفعيل زر المشاركة
         btnShare.setOnClickListener {
             shareMeal()
         }
 
-        // تفعيل زر الإضافة إلى الخطة
         btnAddToPlanDetails.setOnClickListener {
             currentMeal?.let { meal ->
                 showAddToPlanDialog(meal)
@@ -192,7 +198,7 @@ class DetailsFragment : Fragment() {
         }
 
         detailsViewModel.recipe.observe(viewLifecycleOwner) { result ->
-            currentMeal = result // تخزين الوجبة الحالية
+            currentMeal = result
             bindData(result)
         }
 
@@ -207,14 +213,55 @@ class DetailsFragment : Fragment() {
     }
 
     private fun bindData(recipe: Meal) {
-        ingredientsAdapter.updateData(recipe.listIngredientsWithMeasures)
+        ingredientsAdapter.updateData(recipe.getIngredientsWithMeasurements()) // استخدام الدالة بدلاً من الخاصية
         ingredientsRecycler.adapter = ingredientsAdapter
         mealName.text = recipe.strMeal
         mealCategory.text = recipe.strCategory
         mealArea.text = recipe.strArea
         Glide.with(requireContext()).load(recipe.strMealThumb).into(mealImage)
-        instructionsText.text = recipe.strInstructions
+        // Format and set the instructions with the desired style
+        instructionsText.text = formatInstructions(recipe.strInstructions)
         activateYoutubePlayer(recipe.strYoutube)
+    }
+
+    // Format the instructions with "Step X" in bold and custom color
+    private fun formatInstructions(instructions: String): SpannableStringBuilder {
+        // Split the instructions into steps based on paragraph breaks (\r\n)
+        val steps = instructions.split("\r\n").filter { it.isNotBlank() }
+
+        val formattedText = SpannableStringBuilder()
+
+        steps.forEachIndexed { index, step ->
+            // Add the "Step X" label (e.g., "Step 1 ", "Step 2 ", etc.)
+            val stepLabel = "Step ${index + 1} "
+            formattedText.append(stepLabel)
+
+            // Apply bold and custom color to the "Step X" label
+            val labelStart = formattedText.length - stepLabel.length
+            val labelEnd = formattedText.length
+            formattedText.setSpan(
+                StyleSpan(Typeface.BOLD),
+                labelStart,
+                labelEnd,
+                SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            formattedText.setSpan(
+                ForegroundColorSpan(ContextCompat.getColor(requireContext(), R.color.mycolor)),
+                labelStart,
+                labelEnd,
+                SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+
+            // Add the step description
+            formattedText.append(step.trim())
+
+            // Add a newline between steps, except for the last one
+            if (index < steps.size - 1) {
+                formattedText.append("\n\n")
+            }
+        }
+
+        return formattedText
     }
 
     private fun changeFavouriteState(recipeId: String, isChange: Boolean) {

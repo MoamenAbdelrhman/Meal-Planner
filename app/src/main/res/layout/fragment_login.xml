@@ -6,7 +6,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:padding="16dp"
     tools:context=".auth.login.view.LoginFragment"
-    android:background="@color/background">
+    android:background="@color/white">
 
     <ScrollView
         android:layout_width="match_parent"

@@ -63,7 +63,7 @@
                 <ImageView
                     android:id="@+id/mealImage"
                     android:layout_width="match_parent"
-                    android:layout_height="350dp"
+                    android:layout_height="450dp"
                     android:scaleType="fitXY"
                     tools:srcCompat="@tools:sample/avatars" />
 
@@ -132,10 +132,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:layout_marginTop="300dp"
+                    android:layout_marginTop="380dp"
                     android:layout_marginEnd="16dp"
                     android:layout_marginBottom="26dp"
-                    app:cardCornerRadius="36dp"
+                    app:cardCornerRadius="24dp"
                     app:cardElevation="10dp">
 
                     <LinearLayout
@@ -156,7 +156,7 @@
                             android:text="Mexican Grilled Salmon with Avocado Salsa"
                             android:textAlignment="center"
                             android:textColor="@color/black"
-                            android:textSize="18sp"
+                            android:textSize="20sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -167,7 +167,7 @@
                             android:layout_margin="4dp"
                             android:text="Vegetarian"
                             android:textColor="@color/black"
-                            android:textSize="14sp"
+                            android:textSize="18sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -178,7 +178,7 @@
                             android:layout_margin="4dp"
                             android:text="Italian"
                             android:textColor="@color/black"
-                            android:textSize="14sp"
+                            android:textSize="18sp"
                             android:textStyle="bold" />
 
                     </LinearLayout>
@@ -220,6 +220,7 @@
                         android:text="Ingredients"
                         android:textSize="24sp"
                         android:textStyle="bold"
+                        android:textColor="@color/mycolor"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
@@ -275,6 +276,7 @@
                         android:text="Instructions"
                         android:textSize="24sp"
                         android:textStyle="bold"
+                        android:textColor="@color/mycolor"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />

@@ -20,7 +20,9 @@
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:src="@mipmap/meal_icon" />
+            android:src="@mipmap/meal_icon"
+            app:tint="@color/mycolor"
+            />
 
     </androidx.cardview.widget.CardView>
 
@@ -32,7 +34,7 @@
         android:layout_marginTop="30dp"
         android:gravity="center|start"
         android:text="Moamen Abdulrahman"
-        android:textColor="@color/black"
+        android:textColor="@color/mycolor"
         android:textSize="20sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
@@ -56,9 +58,9 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
         android:text="Meal Panner"
-        android:textSize="18sp"
+        android:textSize="22sp"
         android:textStyle="bold"
-        android:textColor="@color/black"
+        android:textColor="@color/mycolor"
         app:layout_constraintBottom_toBottomOf="@+id/cardView"
         app:layout_constraintStart_toEndOf="@+id/cardView"
         app:layout_constraintTop_toTopOf="@+id/cardView"

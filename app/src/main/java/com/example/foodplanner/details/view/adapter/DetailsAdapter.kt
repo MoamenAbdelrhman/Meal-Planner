@@ -5,16 +5,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.activity.OnBackPressedCallback
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.foodplanner.R
+import com.example.foodplanner.core.model.remote.IngredientWithMeasure
 
 class DetailsAdapter : RecyclerView.Adapter<DetailsAdapter.ViewHolder>() {
 
-    private var data: List<Pair<String, String>> = emptyList()
-
-
+    private var data: List<IngredientWithMeasure> = emptyList()
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val ingredientName: TextView = itemView.findViewById(R.id.ingredientName)
@@ -29,11 +27,11 @@ class DetailsAdapter : RecyclerView.Adapter<DetailsAdapter.ViewHolder>() {
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val (name, measure) = data[position]
-        holder.ingredientName.text = name
-        holder.ingredientMeasure.text = measure
+        val ingredientWithMeasure = data[position]
+        holder.ingredientName.text = ingredientWithMeasure.ingredient
+        holder.ingredientMeasure.text = ingredientWithMeasure.measure
 
-        val imageUrl = getIngredientImageUrl(name)
+        val imageUrl = getIngredientImageUrl(ingredientWithMeasure.ingredient)
         Glide.with(holder.itemView.context)
             .load(imageUrl)
             .placeholder(R.drawable.error_ingredient)
@@ -45,7 +43,7 @@ class DetailsAdapter : RecyclerView.Adapter<DetailsAdapter.ViewHolder>() {
         return data.size
     }
 
-    fun updateData(data: List<Pair<String, String>>) {
+    fun updateData(data: List<IngredientWithMeasure>) {
         this.data = data
         notifyDataSetChanged()
     }
@@ -54,5 +52,4 @@ class DetailsAdapter : RecyclerView.Adapter<DetailsAdapter.ViewHolder>() {
         val formattedName = ingredientName.lowercase().replace(" ", "_")
         return "https://www.themealdb.com/images/ingredients/$formattedName.png"
     }
-
 }

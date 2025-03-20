@@ -1,8 +1,7 @@
 package com.example.foodplanner.main.view
 
-import android.content.Context
-import android.os.Bundle
 import android.content.Intent
+import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
@@ -14,7 +13,6 @@ import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
@@ -28,7 +26,11 @@ import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase
 import com.example.foodplanner.core.model.remote.Response
+import com.example.foodplanner.core.model.remote.repository.MealRepositoryImpl
+import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
 import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel
+import com.example.foodplanner.core.viewmodel.DataViewModel
+import com.example.foodplanner.core.viewmodel.DataViewModelFactory
 import com.example.foodplanner.main.viewModel.RecipeActivityViewModel
 import com.example.foodplanner.main.viewModel.RecipeActivityViewModelFactory
 import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModel
@@ -52,7 +54,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             LocalDataSourceImpl(UserDatabase.getDatabaseInstance(this).userDao()),
             FirebaseAuth.getInstance()
         )
-        MealPlanViewModelFactory( userRepository, this)
+        MealPlanViewModelFactory(userRepository, this)
+    }
+
+    private val dataViewModel: DataViewModel by viewModels {
+        val userRepository = UserRepositoryImpl(
+            LocalDataSourceImpl(UserDatabase.getDatabaseInstance(this).userDao()),
+            FirebaseAuth.getInstance()
+        )
+        val mealRepository = MealRepositoryImpl(RemoteGsonDataImpl())
+        val favouriteMealDao = UserDatabase.getDatabaseInstance(this).favouriteMealDao()
+        DataViewModelFactory(userRepository, mealRepository, favouriteMealDao)
     }
 
     private lateinit var authViewModel: AuthViewModel
@@ -64,6 +76,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var userName: TextView
     private lateinit var userEmail: TextView
     private lateinit var navController: NavController
+    private val auth = FirebaseAuth.getInstance()
 
     private val navOptions = NavOptions.Builder()
         .setEnterAnim(R.anim.slide_in_right)
@@ -74,38 +87,39 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-
         initUi()
 
-        viewModel.navigateToFragment.observe(this) { fragmentId ->
-            fragmentId?.let {
-                bottomNavigationView.selectedItemId = fragmentId
-            }
-        }
-
-        Log.d("TAG", "onCreate Called")
-
+        // تهيئة AuthViewModel
         val userRepository = UserRepositoryImpl(
             LocalDataSourceImpl(UserDatabase.getDatabaseInstance(this).userDao()),
             FirebaseAuth.getInstance()
         )
-
         val authViewModelFactory = AuthViewModelFactory(userRepository)
         authViewModel = ViewModelProvider(this, authViewModelFactory)[AuthViewModel::class.java]
-        authViewModel.checkUserLoggedIn()
 
-        authViewModel.user.observe(this) { user ->
-            Log.d("AuthDebug", "User value: $user")
-            if (user == null) {
-                Log.d("AuthDebug", "Navigating to AuthActivity")
+        // Monitor authentication state
+        auth.addAuthStateListener { firebaseAuth ->
+            val user = firebaseAuth.currentUser
+            if (user != null) {
+                dataViewModel.startFavoritesSync(user.uid)
+                mealPlanViewModel.startMealPlansSync(user.uid)
+                userName.text = user.displayName ?: "Unknown"
+                userEmail.text = user.email ?: "No email"
+            } else {
+                dataViewModel.stopFavoritesSync()
+                mealPlanViewModel.stopMealPlansSync()
                 startActivity(Intent(this, AuthActivity::class.java))
                 finish()
-            } else {
-                authViewModel.saveUserToLocalDatabase(user)
-                userName.text = user.username ?: "Unknown"
-                userEmail.text = user.email ?: "No email"
             }
         }
+
+        viewModel.navigateToFragment.observe(this) { fragmentId ->
+            fragmentId?.let {
+                bottomNavigationView.selectedItemId = it
+            }
+        }
+
+        Log.d("TAG", "onCreate Called")
     }
 
     private fun initUi() {
@@ -135,6 +149,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         bottomNavigationView.setupWithNavController(navController)
 
+        // Ensure the Home fragment is selected by default
+        bottomNavigationView.selectedItemId = R.id.nav_home
+
         navController.addOnDestinationChangedListener { _, destination, _ ->
             Log.d("Navigation", "Current destination: ${destination.id}")
             when (destination.id) {
@@ -154,18 +171,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawer.closeDrawer(GravityCompat.START)
 
         when (item.itemId) {
-            R.id.action_settings -> {
-                Toast.makeText(this, "Settings selected", Toast.LENGTH_SHORT).show()
-                return true
-            }
-            R.id.action_dark_mode -> {
-                Toast.makeText(this, "Dark Mode selected", Toast.LENGTH_SHORT).show()
-                return true
-            }
-            R.id.action_security_policies -> {
-                Toast.makeText(this, "Security Policies selected", Toast.LENGTH_SHORT).show()
-                return true
-            }
             R.id.action_about_developer -> {
                 navController.navigate(R.id.action_about_developer, null, navOptions)
                 return true
@@ -210,11 +215,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     positiveBtnMsg = "Delete",
                     negativeBtnMsg = "Cancel",
                     positiveBtnFun = {
-                        val userId = FirebaseAuth.getInstance().currentUser?.uid
-                            ?: run {
-                                Toast.makeText(this, "No user is signed in", Toast.LENGTH_SHORT).show()
-                                return@createMaterialAlertDialogBuilderOkCancel
-                            }
+                        val userId = auth.currentUser?.uid ?: run {
+                            Toast.makeText(this, "No user is signed in", Toast.LENGTH_SHORT).show()
+                            return@createMaterialAlertDialogBuilderOkCancel
+                        }
 
                         mealPlanViewModel.clearMealPlanForUser(userId)
                         mealPlanViewModel.clearMealPlanResult.observe(this) { success ->
@@ -251,51 +255,3 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return navController.navigateUp() || super.onSupportNavigateUp()
     }
 }
-
-
-/*
-
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        // Initialize Firebase
-        FirebaseApp.initializeApp(this)
-        // Initialize Firebase Auth
-        auth = FirebaseAuth.getInstance()
-
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id))
-            .requestEmail()
-            .build()
-
-
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
-
-        // Check if user is logged in
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
-            // If not logged in, redirect to LoginActivity
-            startActivity(Intent(this, AuthActivity::class.java))
-            finish()
-            return
-        }
-
-        loadFragment(HomeFragment())
-
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> loadFragment(HomeFragment())
-                R.id.nav_search -> loadFragment(SearchFragment())
-                R.id.nav_favorites -> loadFragment(FavoritesFragment())
-                R.id.nav_meal_plan -> loadFragment(MealPlanFragment())
-            }
-            true
-        }
-*/
-
-/* // Logout Button
-val logoutButton = findViewById<Button>(R.id.logoutButton)
-logoutButton.setOnClickListener {
-    mGoogleSignInClient.signOut()
-    auth.signOut()
-    startActivity(Intent(this, AuthActivity::class.java))
-    finish()
-}*/

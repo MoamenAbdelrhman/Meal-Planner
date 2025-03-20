@@ -24,6 +24,7 @@ import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
 import com.example.foodplanner.R
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
@@ -36,7 +37,6 @@ import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
 import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder.createFailureResponse
 import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOk
 import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel
-import com.example.foodplanner.core.util.SystemChecks
 import com.example.foodplanner.core.viewmodel.DataViewModel
 import com.example.foodplanner.core.viewmodel.DataViewModelFactory
 import com.example.foodplanner.details.viewmodel.DetailsFactory
@@ -96,6 +96,7 @@ class HomeFragment : Fragment() {
     private lateinit var recyclerViewCategoriesItems: RecyclerView
     private lateinit var recyclerViewRecommendations: RecyclerView
     private lateinit var recyclerViewCuisine: RecyclerView
+    private lateinit var shimmerMealOfDay: ShimmerFrameLayout
     private lateinit var shimmerCategories: ShimmerFrameLayout
     private lateinit var shimmerCategoriesItem: ShimmerFrameLayout
     private lateinit var shimmerRecommendations: ShimmerFrameLayout
@@ -109,10 +110,12 @@ class HomeFragment : Fragment() {
     private lateinit var drawer: DrawerLayout
     private lateinit var searchBarHome: TextView
     private lateinit var mealImage: ImageView
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
 
     private var favouriteState = false
     private var isCategoriesLoaded = false
-    private var selectedCategory: String? = "Beef"
+    private var selectedCategory: String? = null
+    private var selectedCuisine: String? = null
     private var isDataLoaded = false
     private var mealOfTheDay: Meal? = null
     private var isInitialLoad = true
@@ -133,18 +136,28 @@ class HomeFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) {
-            homeViewModel.getFilteredMealsByAreas("Egyptian")
-            homeViewModel.getFilteredMealsByCategory("Beef")
+            homeViewModel.getRandomCuisine { randomCuisine ->
+                selectedCuisine = randomCuisine
+                homeViewModel.getFilteredMealsByAreas(randomCuisine)
+            }
+
+            homeViewModel.getRandomCategory { randomCategory ->
+                selectedCategory = randomCategory
+                homeViewModel.getFilteredMealsByCategory(randomCategory)
+            }
+
             homeViewModel.getRandomMeal()
             homeViewModel.getRandomMeals(10)
             homeViewModel.getCategories()
             isDataLoaded = true
-            isCategoriesLoaded = true
             isInitialLoad = true
         } else {
-            selectedCategory = savedInstanceState.getString("selectedCategory", "Beef")
+            selectedCategory = savedInstanceState.getString("selectedCategory", null)
+            selectedCuisine = savedInstanceState.getString("selectedCuisine", null)
             isInitialLoad = false
-            isCategoriesLoaded = true
+
+            selectedCuisine?.let { homeViewModel.getFilteredMealsByAreas(it) }
+            selectedCategory?.let { homeViewModel.getFilteredMealsByCategory(it) }
         }
     }
 
@@ -153,10 +166,7 @@ class HomeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
-
         initializeUi(view)
-        textViewCuisines.text = "Egyptian Meals"
-
         searchBarHome.setOnClickListener {
             recipeViewModel.navigateTo(R.id.action_search)
         }
@@ -178,6 +188,9 @@ class HomeFragment : Fragment() {
         selectedCategory?.let {
             outState.putString("selectedCategory", it)
         }
+        selectedCuisine?.let {
+            outState.putString("selectedCuisine", it)
+        }
     }
 
     private fun initializeUi(view: View) {
@@ -186,6 +199,7 @@ class HomeFragment : Fragment() {
         recyclerViewRecommendations = view.findViewById(R.id.recyclerview_recommendations)
         recyclerViewCuisine = view.findViewById(R.id.recyclerview_meal_by_fav_cuisine)
 
+        shimmerMealOfDay = view.findViewById(R.id.shimmer_mealofday)
         shimmerCategories = view.findViewById(R.id.shimmer_categories)
         shimmerCategoriesItem = view.findViewById(R.id.shimmer_mealbycategories)
         shimmerRecommendations = view.findViewById(R.id.shimmer_recommendations)
@@ -248,6 +262,61 @@ class HomeFragment : Fragment() {
 
         navController = requireActivity().supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
             ?.findNavController()
+
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout)
+        swipeRefreshLayout.setOnRefreshListener {
+            refreshAllData()
+        }
+    }
+
+    private fun refreshAllData() {
+        isDataLoaded = false
+        isInitialLoad = true
+        selectedCategory = null
+        selectedCuisine = null
+
+        // Clear the RecyclerView adapters
+        categoriesAdapter.submitList(emptyList())
+        categoriesItemAdapter.submitList(emptyList())
+        recommendationsAdapter.submitList(emptyList())
+        cuisineAdapter.submitList(emptyList())
+
+        // Reset and show all Shimmer effects
+        shimmerMealOfDay.visibility = View.VISIBLE
+        shimmerMealOfDay.startShimmer()
+
+        shimmerCategories.visibility = View.VISIBLE
+        shimmerCategories.startShimmer()
+
+        shimmerCategoriesItem.visibility = View.VISIBLE
+        shimmerCategoriesItem.startShimmer()
+
+        shimmerRecommendations.visibility = View.VISIBLE
+        shimmerRecommendations.startShimmer()
+
+        shimmerCuisine.visibility = View.VISIBLE
+        shimmerCuisine.startShimmer()
+
+        // Disable the "Add to Plan" button while loading
+        btnAddToPlan.isEnabled = false
+
+        // Reload data
+        homeViewModel.getRandomMeal()
+        homeViewModel.getRandomMeals(10)
+        homeViewModel.getCategories()
+
+        homeViewModel.getRandomCategory { randomCategory ->
+            selectedCategory = randomCategory
+            homeViewModel.getFilteredMealsByCategory(randomCategory)
+        }
+
+        homeViewModel.getRandomCuisine { randomCuisine ->
+            selectedCuisine = randomCuisine
+            homeViewModel.getFilteredMealsByAreas(randomCuisine)
+        }
+
+        // Stop the SwipeRefreshLayout spinner
+        swipeRefreshLayout.isRefreshing = false
     }
 
     private fun initObservers() {
@@ -259,7 +328,7 @@ class HomeFragment : Fragment() {
             category?.let {
                 if (isInitialLoad) {
                     selectedCategory = it
-                    homeViewModel.getFilteredMealsByCategory(it) // تحميل التصنيف الأولي
+                    homeViewModel.getFilteredMealsByCategory(it)
                     isInitialLoad = false
                 }
             }
@@ -277,9 +346,16 @@ class HomeFragment : Fragment() {
             randomMeal.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
+                        // Ensure Shimmer is visible and running
+                        shimmerMealOfDay.visibility = View.VISIBLE
+                        shimmerMealOfDay.startShimmer()
+                        cardViewFreeTrial.visibility = View.INVISIBLE
                         btnAddToPlan.isEnabled = false
                     }
                     is Response.Success -> {
+                        shimmerMealOfDay.stopShimmer()
+                        shimmerMealOfDay.visibility = View.GONE
+                        cardViewFreeTrial.visibility = View.VISIBLE
                         val meal = response.data
                         recipeId = meal.idMeal
                         updateFreeTrialCard(meal)
@@ -289,38 +365,37 @@ class HomeFragment : Fragment() {
                         btnAddToPlan.isEnabled = true
                     }
                     is Response.Failure -> {
-                        Log.e("HomeFragment", "Failed to load random meal")
-                        btnAddToPlan.isEnabled = false
+                        getRandomMeal()
                     }
                 }
             }
-        }
 
-        // Handle categories
-        with(homeViewModel) {
             dataCategories.observe(viewLifecycleOwner) { response ->
                 when (response) {
-                    is Response.Loading -> shimmerCategories.startShimmer()
+                    is Response.Loading -> {
+                        // Ensure Shimmer is visible and running
+                        shimmerCategories.visibility = View.VISIBLE
+                        shimmerCategories.startShimmer()
+                    }
                     is Response.Success -> {
                         shimmerCategories.stopShimmer()
                         shimmerCategories.visibility = View.GONE
                         categoriesAdapter.submitList(response.data.categories)
+                        isCategoriesLoaded = true
                     }
                     is Response.Failure -> {
-                        if (!isCategoriesLoaded) {
-                            getCategories()
-                            isCategoriesLoaded = true
-                        }
+                        getCategories()
                     }
                 }
             }
-        }
 
-        // Handle meals for categories (Beef by default, updated on manual change)
-        with(homeViewModel) {
             filteredMealsByCategory.observe(viewLifecycleOwner) { response ->
                 when (response) {
-                    is Response.Loading -> shimmerCategoriesItem.startShimmer()
+                    is Response.Loading -> {
+                        // Ensure Shimmer is visible and running
+                        shimmerCategoriesItem.visibility = View.VISIBLE
+                        shimmerCategoriesItem.startShimmer()
+                    }
                     is Response.Success -> {
                         shimmerCategoriesItem.stopShimmer()
                         shimmerCategoriesItem.visibility = View.GONE
@@ -329,17 +404,21 @@ class HomeFragment : Fragment() {
                         }
                     }
                     is Response.Failure -> {
-                        homeViewModel.getFilteredMealsByCategory("Beef")
+                        homeViewModel.getRandomCategory { randomCategory ->
+                            selectedCategory = randomCategory
+                            homeViewModel.getFilteredMealsByCategory(randomCategory)
+                        }
                     }
                 }
             }
-        }
 
-        // Handle random meals for recommendations
-        with(homeViewModel) {
             someRecommendedMeals.observe(viewLifecycleOwner) { response ->
                 when (response) {
-                    is Response.Loading -> shimmerRecommendations.startShimmer()
+                    is Response.Loading -> {
+                        // Ensure Shimmer is visible and running
+                        shimmerRecommendations.visibility = View.VISIBLE
+                        shimmerRecommendations.startShimmer()
+                    }
                     is Response.Success -> {
                         shimmerRecommendations.stopShimmer()
                         shimmerRecommendations.visibility = View.GONE
@@ -350,22 +429,27 @@ class HomeFragment : Fragment() {
                     }
                 }
             }
-        }
 
-        // Handle user cuisines
-        with(homeViewModel) {
             filteredMealsByAreas.observe(viewLifecycleOwner) { response ->
                 when (response) {
-                    is Response.Loading -> shimmerCuisine.startShimmer()
+                    is Response.Loading -> {
+                        // Ensure Shimmer is visible and running
+                        shimmerCuisine.visibility = View.VISIBLE
+                        shimmerCuisine.startShimmer()
+                    }
                     is Response.Success -> {
                         shimmerCuisine.stopShimmer()
                         shimmerCuisine.visibility = View.GONE
                         if (response.data.meals.isNotEmpty()) {
                             cuisineAdapter.submitList(response.data.meals)
+                            textViewCuisines.text = "$selectedCuisine Meals"
                         }
                     }
                     is Response.Failure -> {
-                        homeViewModel.getFilteredMealsByAreas("Egyptian")
+                        homeViewModel.getRandomCuisine { randomCuisine ->
+                            selectedCuisine = randomCuisine
+                            homeViewModel.getFilteredMealsByAreas(randomCuisine)
+                        }
                     }
                 }
             }
@@ -429,9 +513,10 @@ class HomeFragment : Fragment() {
         }
 
         popup.setOnMenuItemClickListener { item ->
-            val selectedCuisine = item.title.toString()
-            homeViewModel.getFilteredMealsByAreas(selectedCuisine)
-            textViewCuisines.text = "$selectedCuisine Meals"
+            val selectedCuisineNew = item.title.toString()
+            selectedCuisine = selectedCuisineNew
+            homeViewModel.getFilteredMealsByAreas(selectedCuisineNew)
+            textViewCuisines.text = "$selectedCuisineNew Meals"
             true
         }
     }

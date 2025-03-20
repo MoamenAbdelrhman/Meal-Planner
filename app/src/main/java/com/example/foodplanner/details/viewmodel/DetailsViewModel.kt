@@ -5,11 +5,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodplanner.core.model.remote.Meal
-import com.example.foodplanner.core.model.remote.getIngredientsWithMeasurements
 import com.example.foodplanner.core.model.remote.repository.MealRepository
 import kotlinx.coroutines.launch
 
-class DetailsViewModel (private val mealRepository: MealRepository) : ViewModel() {
+class DetailsViewModel(private val mealRepository: MealRepository) : ViewModel() {
 
     private val _recipe = MutableLiveData<Meal>()
     val recipe: LiveData<Meal> get() = _recipe
@@ -17,8 +16,8 @@ class DetailsViewModel (private val mealRepository: MealRepository) : ViewModel(
     fun getMealDetails(mealId: String) {
         viewModelScope.launch {
             val meal = mealRepository.getMealById(mealId)
-            meal.let {
-                it.listIngredientsWithMeasures = it.getIngredientsWithMeasurements()
+            meal?.let {
+                it.populateIngredientsWithMeasures() // استدعاء الدالة لحساب listIngredientsWithMeasures
                 _recipe.value = it
             }
         }

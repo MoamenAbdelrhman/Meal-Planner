@@ -34,7 +34,7 @@ class MealPlanFragment : Fragment() {
             LocalDataSourceImpl(UserDatabase.getDatabaseInstance(requireContext()).userDao()),
             FirebaseAuth.getInstance()
         )
-        MealPlanViewModelFactory( userRepository, requireContext())
+        MealPlanViewModelFactory(userRepository, requireContext())
     }
 
     private val dataViewModel: DataViewModel by activityViewModels {
@@ -53,7 +53,10 @@ class MealPlanFragment : Fragment() {
     private lateinit var mealPlanAdapter: MealPlanAdapter
     private var navController: NavController? = null
 
-    private val navOptions = NavOptions.Builder().build()
+    private val navOptions = NavOptions.Builder()
+        .setEnterAnim(R.anim.slide_in_right)
+        .setPopExitAnim(R.anim.slide_out_right)
+        .build()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -74,6 +77,11 @@ class MealPlanFragment : Fragment() {
 
         navController = requireActivity().supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment)?.findNavController()
+
+        // التأكد من بدء المزامنة إذا لم تبدأ بعد
+        FirebaseAuth.getInstance().currentUser?.uid?.let { userId ->
+            mealPlanViewModel.startMealPlansSync(userId)
+        }
     }
 
     private fun initializeUi(view: View) {

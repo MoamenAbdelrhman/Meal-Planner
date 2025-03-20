@@ -16,7 +16,9 @@ data class MealPlanEntity(
 
 fun MealPlanEntity.toMeal(): Meal {
     val gson = Gson()
-    return gson.fromJson(mealData, Meal::class.java)
+    val meal = gson.fromJson(mealData, Meal::class.java)
+    meal.populateIngredientsWithMeasures() // ملء القائمة بعد التحويل
+    return meal
 }
 
 fun Meal.toMealPlanEntity(userId: String, dayName: String): MealPlanEntity {
@@ -25,7 +27,6 @@ fun Meal.toMealPlanEntity(userId: String, dayName: String): MealPlanEntity {
     return MealPlanEntity(userId, idMeal, dayName, mealData)
 }
 
-// تحويل قائمة MealPlanEntity إلى DayMealPlan للعرض
 fun List<MealPlanEntity>.toDayMealPlans(): List<DayMealPlan> {
     return this.groupBy { it.dayName }
         .map { (dayName, entities) ->

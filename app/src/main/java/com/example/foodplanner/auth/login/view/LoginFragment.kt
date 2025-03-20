@@ -25,7 +25,7 @@ import com.example.foodplanner.auth.login.viewModel.LoginViewModelFactory
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase
-import com.example.foodplanner.core.util.SystemChecks.isNetworkAvailable
+import com.example.foodplanner.utils.NetworkUtils.isInternetAvailable
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -101,7 +101,7 @@ class LoginFragment : Fragment() {
         loginButton.setOnClickListener {
             val email = emailEditText.text.toString().trim()
             val password = passwordEditText.text.toString().trim()
-            if (isNetworkAvailable(requireContext())) {
+            if (isInternetAvailable(requireContext())) {
                 if (validateInputs(email, password)) {
                     viewModel.loginUser(email, password)
                 }

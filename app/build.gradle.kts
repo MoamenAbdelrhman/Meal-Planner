@@ -75,7 +75,7 @@ dependencies {
     implementation("androidx.navigation:navigation-ui-ktx:$nav_version")
 
     // ViewModel
-    val lifecycle_version = "2.8.4"
+    val lifecycle_version = "2.4.0"
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version")
 
@@ -115,8 +115,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
 
     implementation("com.google.firebase:firebase-dynamic-links:22.1.0")
-
+    implementation("com.google.firebase:firebase-database:20.0.6")
     implementation("com.google.android.material:material:1.12.0")
+
+    implementation("androidx.core:core-splashscreen:1.0.0")
 
 
 }
