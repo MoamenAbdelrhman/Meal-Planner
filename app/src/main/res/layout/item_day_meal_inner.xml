@@ -34,6 +34,7 @@
                 android:layout_marginTop="5dp"
                 android:layout_marginEnd="5dp"
                 android:layout_gravity="end"
+                app:tint="@color/mycolor"
                 android:src="@android:drawable/ic_menu_close_clear_cancel"
                 app:layout_constraintEnd_toEndOf="@id/ivMealImage"
                 app:layout_constraintTop_toTopOf="@id/ivMealImage" />
@@ -52,7 +53,7 @@
             android:maxLines="2"
             android:minLines="2"
             android:text="Meal Name"
-            android:textColor="@android:color/black"
+            android:textColor="@color/mycolor"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"

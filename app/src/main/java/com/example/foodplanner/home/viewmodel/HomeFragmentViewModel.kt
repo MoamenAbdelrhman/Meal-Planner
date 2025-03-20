@@ -7,12 +7,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodplanner.core.model.local.repository.UserRepository
 import com.example.foodplanner.core.model.remote.FailureReason
-import com.example.foodplanner.core.model.remote.GsonDataArea
 import com.example.foodplanner.core.model.remote.GsonDataCategories
 import com.example.foodplanner.core.model.remote.GsonDataMeal
 import com.example.foodplanner.core.model.remote.Meal
 import com.example.foodplanner.core.model.remote.Response
 import com.example.foodplanner.core.model.remote.repository.MealRepository
+import com.example.foodplanner.utils.NetworkUtils
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -29,15 +29,16 @@ class HomeFragmentViewModel(
     private var _dataCategories: MutableLiveData<Response<GsonDataCategories>> = MutableLiveData()
     val dataCategories: LiveData<Response<GsonDataCategories>> get() = _dataCategories
 
-    fun getCategories() {
-        applyResponse(_dataCategories) {
+    fun getCategories(context: android.content.Context) {
+        applyResponse(_dataCategories, context) {
             mealRepository.getCategories()
         }
     }
+
     private val _defaultMeals = MutableLiveData<Response<MutableList<Meal>>>()
     val defaultMeals: LiveData<Response<MutableList<Meal>>> get() = _defaultMeals
 
-    fun getDefaultMeals(much: Int) {
+    fun getDefaultMeals(much: Int, context: android.content.Context) {
         _defaultMeals.value = Response.Loading
 
         val handler = CoroutineExceptionHandler { _, exception ->
@@ -50,25 +51,29 @@ class HomeFragmentViewModel(
         }
 
         viewModelScope.launch(handler) {
-            val foundMeals = mutableListOf<Deferred<Meal>>().apply {
-                repeat(much) {
-                    add(
-                        async {
-                            mealRepository.getRandomDataMeal().meals.first()
-                        }
-                    )
+            if (NetworkUtils.isInternetAvailable(context)) {
+                val foundMeals = mutableListOf<Deferred<Meal>>().apply {
+                    repeat(much) {
+                        add(
+                            async {
+                                mealRepository.getRandomDataMeal().meals.first()
+                            }
+                        )
+                    }
                 }
+                val meals = foundMeals.awaitAll().toMutableList()
+                _defaultMeals.value = Response.Success(meals)
+            } else {
+                _defaultMeals.value = Response.Failure(FailureReason.NoInternet)
             }
-            val meals = foundMeals.awaitAll().toMutableList()
-            _defaultMeals.value = Response.Success(meals)
         }
     }
 
     private var _filteredMealsByCategory: MutableLiveData<Response<GsonDataMeal>> = MutableLiveData()
     val filteredMealsByCategory: LiveData<Response<GsonDataMeal>> get() = _filteredMealsByCategory
 
-    fun getFilteredMealsByCategory(category: String) {
-        applyResponse(_filteredMealsByCategory) {
+    fun getFilteredMealsByCategory(category: String, context: android.content.Context) {
+        applyResponse(_filteredMealsByCategory, context) {
             mealRepository.getCategoryMeals(category)
         }
     }
@@ -76,8 +81,8 @@ class HomeFragmentViewModel(
     private val _userCuisines: MutableLiveData<Response<List<String>?>> = MutableLiveData()
     val userCuisines: LiveData<Response<List<String>?>> get() = _userCuisines
 
-    fun getUserCuisines() {
-        applyResponse(_userCuisines) {
+    fun getUserCuisines(context: android.content.Context) {
+        applyResponse(_userCuisines, context) {
             userRepository.getLoggedInUser()?.cuisines
         }
     }
@@ -85,16 +90,17 @@ class HomeFragmentViewModel(
     private var _filteredMealsByAreas: MutableLiveData<Response<GsonDataMeal>> = MutableLiveData()
     val filteredMealsByAreas: LiveData<Response<GsonDataMeal>> get() = _filteredMealsByAreas
 
-    fun getFilteredMealsByAreas(area: String) {
-        applyResponse(_filteredMealsByAreas) {
+    fun getFilteredMealsByAreas(area: String, context: android.content.Context) {
+        applyResponse(_filteredMealsByAreas, context) {
             mealRepository.getCuisinesMeals(area)
         }
     }
+
     private val _randomMeal = MutableLiveData<Response<Meal>>()
     val randomMeal: LiveData<Response<Meal>> get() = _randomMeal
 
-    fun getRandomMeal() {
-        applyResponse(_randomMeal) {
+    fun getRandomMeal(context: android.content.Context) {
+        applyResponse(_randomMeal, context) {
             mealRepository.getRandomDataMeal().meals.first()
         }
     }
@@ -102,7 +108,7 @@ class HomeFragmentViewModel(
     private val _allCuisines = MutableLiveData<Response<List<String>>>()
     val allCuisines: LiveData<Response<List<String>>> get() = _allCuisines
 
-    fun getAllCuisines() = applyResponse(_allCuisines) {
+    fun getAllCuisines(context: android.content.Context) = applyResponse(_allCuisines, context) {
         mealRepository.getAllCuisines()
     }
 
@@ -112,7 +118,7 @@ class HomeFragmentViewModel(
     private val _someRecommendedMeals = MutableLiveData<Response<MutableList<Meal>>>()
     val someRecommendedMeals: LiveData<Response<MutableList<Meal>>> get() = _someRecommendedMeals
 
-    fun getRandomMeals(much: Int, isGold: Boolean = false) {
+    fun getRandomMeals(much: Int, isGold: Boolean = false, context: android.content.Context) {
         val responseHandler = MutableLiveData<Response<MutableList<Meal>>>()
         responseHandler.observeForever { response ->
             when (isGold) {
@@ -132,58 +138,77 @@ class HomeFragmentViewModel(
         }
 
         viewModelScope.launch(handler) {
-            val foundMeals = mutableListOf<Deferred<Meal>>().apply {
-                repeat(much) {
-                    add(
-                        async() {
-                            mealRepository.getRandomDataMeal().meals.first()
-                        }
-                    )
+            if (NetworkUtils.isInternetAvailable(context)) {
+                val foundMeals = mutableListOf<Deferred<Meal>>().apply {
+                    repeat(much) {
+                        add(
+                            async {
+                                mealRepository.getRandomDataMeal().meals.first()
+                            }
+                        )
+                    }
                 }
+                val meals = foundMeals.awaitAll().toMutableList()
+                responseHandler.value = Response.Success(meals)
+            } else {
+                responseHandler.value = Response.Failure(FailureReason.NoInternet)
             }
-            val meals = foundMeals.awaitAll().toMutableList()
-            responseHandler.value = Response.Success(meals)
             responseHandler.removeObserver { }
         }
     }
 
-    fun getRandomCategory(onResult: (String) -> Unit) {
+    fun getRandomCategory(onResult: (String) -> Unit, context: android.content.Context) {
         viewModelScope.launch {
-            try {
-                val categoriesResponse = mealRepository.getCategories()
-                val randomCategory = categoriesResponse.categories.random().strCategory
-                onResult(randomCategory)
-            } catch (e: Exception) {
-                Log.e("HomeFragmentViewModel", "Failed to fetch random category: ${e.message}")
-                onResult("Beef")
+            if (NetworkUtils.isInternetAvailable(context)) {
+                try {
+                    val categoriesResponse = mealRepository.getCategories()
+                    val randomCategory = categoriesResponse.categories.random().strCategory
+                    onResult(randomCategory)
+                } catch (e: Exception) {
+                    Log.e("HomeFragmentViewModel", "Failed to fetch random category: ${e.message}")
+                    onResult("Beef")
+                }
+            } else {
+                onResult("Beef") // قيمة افتراضية عند انقطاع الإنترنت
             }
         }
     }
 
-    fun getRandomCuisine(onResult: (String) -> Unit) {
+    fun getRandomCuisine(onResult: (String) -> Unit, context: android.content.Context) {
         viewModelScope.launch {
-            try {
-                val cuisinesResponse = mealRepository.getAllCuisines()
-                val randomCuisine = cuisinesResponse.random()
-                onResult(randomCuisine)
-            } catch (e: Exception) {
-                Log.e("HomeFragmentViewModel", "Failed to fetch random cuisine: ${e.message}")
-                onResult("Egyptian")
+            if (NetworkUtils.isInternetAvailable(context)) {
+                try {
+                    val cuisinesResponse = mealRepository.getAllCuisines()
+                    val randomCuisine = cuisinesResponse.random()
+                    onResult(randomCuisine)
+                } catch (e: Exception) {
+                    Log.e("HomeFragmentViewModel", "Failed to fetch random cuisine: ${e.message}")
+                    onResult("Egyptian")
+                }
+            } else {
+                onResult("Egyptian") // قيمة افتراضية عند انقطاع الإنترنت
             }
         }
     }
 
     private fun <T> applyResponse(
         liveData: MutableLiveData<Response<T>>,
+        context: android.content.Context,
         dataFetch: suspend () -> T
     ) {
         liveData.value = Response.Loading
 
         viewModelScope.launch {
-            try {
-                val result = dataFetch()
-                liveData.value = Response.Success(result)
-            } catch (e: IOException) {
+            if (NetworkUtils.isInternetAvailable(context)) {
+                try {
+                    val result = dataFetch()
+                    liveData.value = Response.Success(result)
+                } catch (e: IOException) {
+                    liveData.value = Response.Failure(FailureReason.NoInternet)
+                } catch (e: HttpException) {
+                    liveData.value = Response.Failure(FailureReason.UnknownError(e.message()))
+                }
+            } else {
                 liveData.value = Response.Failure(FailureReason.NoInternet)
             }
         }

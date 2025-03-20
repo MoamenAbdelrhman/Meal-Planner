@@ -19,7 +19,6 @@ interface MealPlanDao {
     @Query("DELETE FROM meal_plan WHERE userId = :userId")
     suspend fun clearMealPlan(userId: String)
 
-    // إضافة استعلام لحذف وجبة معينة ليوم معين
     @Query("DELETE FROM meal_plan WHERE userId = :userId AND dayName = :dayName AND idMeal = :mealId")
     suspend fun deleteMealPlanForDayAndMeal(userId: String, dayName: String, mealId: String)
 }

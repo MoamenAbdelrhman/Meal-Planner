@@ -31,8 +31,8 @@ import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
 import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel
 import com.example.foodplanner.core.viewmodel.DataViewModel
 import com.example.foodplanner.core.viewmodel.DataViewModelFactory
-import com.example.foodplanner.main.viewModel.RecipeActivityViewModel
-import com.example.foodplanner.main.viewModel.RecipeActivityViewModelFactory
+import com.example.foodplanner.main.viewModel.MainActivityViewModel
+import com.example.foodplanner.main.viewModel.MainActivityViewModelFactory
 import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModel
 import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
@@ -41,12 +41,12 @@ import com.google.android.material.navigation.NavigationView
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
-    private val viewModel: RecipeActivityViewModel by viewModels {
+    private val viewModel: MainActivityViewModel by viewModels {
         val database = UserDatabase.getDatabaseInstance(this)
         val userDao = database.userDao()
         val localDataSource = LocalDataSourceImpl(userDao)
         val userRepository = UserRepositoryImpl(localDataSource, FirebaseAuth.getInstance())
-        RecipeActivityViewModelFactory(userRepository)
+        MainActivityViewModelFactory(userRepository)
     }
 
     private val mealPlanViewModel: MealPlanViewModel by viewModels {

@@ -47,6 +47,7 @@ class MealPlanViewModel(
     }
 
     init {
+
         viewModelScope.launch {
             userId = userRepository.getCurrentUserId()
             if (userId == null) {
@@ -55,12 +56,12 @@ class MealPlanViewModel(
                 _isLoading.value = false
             } else {
                 loadMealPlanFromDatabase()
-                startMealPlansSync(userId!!) // بدء المزامنة عند التهيئة
+                startMealPlansSync(userId!!)
             }
         }
     }
 
-    // بدء المزامنة مع Firebase لكل يوم
+    // Start real-time synchronization with Firebase for each day of the week
     fun startMealPlansSync(userId: String) {
         this.userId = userId
         DAYS_OF_WEEK.forEach { day ->
@@ -70,6 +71,7 @@ class MealPlanViewModel(
                     val meal = snapshot.getValue(Meal::class.java)
                     meal?.let {
                         viewModelScope.launch {
+                            // Insert the new meal into Room and refresh the UI
                             mealPlanDao.insertSingleDayMealPlan(it.toMealPlanEntity(userId, day))
                             loadMealPlanFromDatabase()
                         }
@@ -80,6 +82,7 @@ class MealPlanViewModel(
                     val mealId = snapshot.key
                     mealId?.let {
                         viewModelScope.launch {
+                            // Remove the meal from Room and refresh the UI
                             mealPlanDao.deleteMealPlanForDayAndMeal(userId, day, it)
                             loadMealPlanFromDatabase()
                         }
@@ -89,8 +92,9 @@ class MealPlanViewModel(
                 override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
                     val meal = snapshot.getValue(Meal::class.java)
                     meal?.let {
-                        it.populateIngredientsWithMeasures() // ملء القائمة بعد التحويل
+                        it.populateIngredientsWithMeasures() // Populate ingredients after deserialization
                         viewModelScope.launch {
+                            // Update the meal in Room and refresh the UI
                             mealPlanDao.insertSingleDayMealPlan(it.toMealPlanEntity(userId, day))
                             loadMealPlanFromDatabase()
                         }
@@ -98,7 +102,7 @@ class MealPlanViewModel(
                 }
                 override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
                 override fun onCancelled(error: DatabaseError) {
-                    Log.e("MealPlanViewModel", "فشل في مزامنة خطة $day", error.toException())
+                    Log.e("MealPlanViewModel", "Failed to sync $day plan", error.toException())
                 }
             }
             dayRef.addChildEventListener(listener)
@@ -106,7 +110,7 @@ class MealPlanViewModel(
         }
     }
 
-    // إيقاف المزامنة
+    // Stop real-time synchronization by removing all Firebase listeners
     fun stopMealPlansSync() {
         userId?.let { uid ->
             DAYS_OF_WEEK.forEach { day ->
@@ -117,11 +121,13 @@ class MealPlanViewModel(
         }
     }
 
+    // Load the meal plan from Room database and update the LiveData
     private fun loadMealPlanFromDatabase() {
         viewModelScope.launch {
             userId?.let { id ->
                 val savedPlanEntities = mealPlanDao.getMealPlan(id)
                 val savedPlan = savedPlanEntities.toDayMealPlans()
+                // Ensure all days are included, even if empty
                 val fullWeekPlan = DAYS_OF_WEEK.map { dayName ->
                     savedPlan.find { it.dayName.equals(dayName, ignoreCase = true) } ?: DayMealPlan(dayName)
                 }
@@ -131,6 +137,7 @@ class MealPlanViewModel(
         }
     }
 
+    // Add a meal to the specified day and sync with Firebase and Room
     fun addMealToPlan(dayName: String, meal: Meal) {
         viewModelScope.launch {
             userId?.let { id ->
@@ -149,16 +156,18 @@ class MealPlanViewModel(
                     currentPlan.apply { add(DayMealPlan(dayName, mutableListOf(meal))) }
                 }
                 _weeklyMealPlan.value = updatedPlan
-                // تحديث Firebase و Room
+                // Sync with Firebase and Room
                 FirebaseDatabase.getInstance().getReference("/users/$id/mealPlans/$dayName/${meal.idMeal}").setValue(meal)
                 mealPlanDao.insertSingleDayMealPlan(meal.toMealPlanEntity(id, dayName))
             }
         }
     }
 
+    // Delete a meal from the specified day and sync with Firebase and Room
     fun deleteMealFromPlan(dayName: String, meal: Meal) {
         viewModelScope.launch {
             userId?.let { id ->
+                // Update the local meal plan
                 val currentPlan = _weeklyMealPlan.value?.toMutableList() ?: mutableListOf()
                 val updatedPlan = currentPlan.map {
                     if (it.dayName.equals(dayName, ignoreCase = true)) {
@@ -169,30 +178,35 @@ class MealPlanViewModel(
                     }
                 }
                 _weeklyMealPlan.value = updatedPlan
-                // تحديث Firebase و Room
+
+                // Remove from Firebase
                 FirebaseDatabase.getInstance().getReference("/users/$id/mealPlans/$dayName/${meal.idMeal}").removeValue()
-                mealPlanDao.clearMealPlan(id)
-                updatedPlan.forEach { day ->
-                    day.meals.forEach { m ->
-                        mealPlanDao.insertSingleDayMealPlan(m.toMealPlanEntity(id, day.dayName))
-                    }
-                }
+
+                // Remove from Room
+                mealPlanDao.deleteMealPlanForDayAndMeal(id, dayName, meal.idMeal)
+
+                // Refresh the UI immediately
+                loadMealPlanFromDatabase()
             }
         }
     }
 
+    // Clear the entire meal plan for the user from both Firebase and Room
     fun clearMealPlanForUser(userId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 mealPlanDao.clearMealPlan(userId)
                 FirebaseDatabase.getInstance().getReference("/users/$userId/mealPlans").removeValue()
                 _clearMealPlanResult.postValue(true)
+                // Refresh the UI after clearing
+                loadMealPlanFromDatabase()
             } catch (e: Exception) {
                 _clearMealPlanResult.postValue(false)
             }
         }
     }
 
+    // Clean up Firebase listeners when the ViewModel is cleared
     override fun onCleared() {
         super.onCleared()
         stopMealPlansSync()

@@ -19,12 +19,15 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.util.Log
+import android.widget.TextView
+import androidx.lifecycle.lifecycleScope
 import com.example.foodplanner.R
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase
 import com.example.foodplanner.core.model.remote.repository.MealRepositoryImpl
 import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
+import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder
 import com.example.foodplanner.core.viewmodel.DataViewModel
 import com.example.foodplanner.core.viewmodel.DataViewModelFactory
 import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModel
@@ -32,9 +35,13 @@ import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModelFactory
 import com.example.foodplanner.search.adapter.MealsAdapter
 import com.example.foodplanner.search.viewmodel.SearchViewModel
 import com.example.foodplanner.search.viewmodel.SearchViewModelFactory
+import com.example.foodplanner.utils.NetworkUtils
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class SearchFragment : Fragment() {
 
@@ -62,6 +69,7 @@ class SearchFragment : Fragment() {
     }
 
     private lateinit var etSearch: EditText
+    private lateinit var noResultsTextView: TextView
     private lateinit var cgSearchType: ChipGroup
     private lateinit var rvMeals: RecyclerView
     private lateinit var progressBar: ProgressBar
@@ -105,6 +113,7 @@ class SearchFragment : Fragment() {
         chipCountry = view.findViewById(R.id.chipCountry)
         chipIngredient = view.findViewById(R.id.chipIngredient)
         chipCategory = view.findViewById(R.id.chipCategory)
+        noResultsTextView = view.findViewById(R.id.noResultsTextView)
 
         chipCountry.isCloseIconVisible = false
         chipCountry.isChecked = false
@@ -126,8 +135,7 @@ class SearchFragment : Fragment() {
                 (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)) {
                 val query = v.text.toString().trim()
                 if (query.isNotEmpty()) {
-                    progressBar.visibility = View.VISIBLE
-                    performSearch(query)
+                    performSearchWithInternetCheck(query)
                     hideKeyboard()
                 }
                 true
@@ -140,9 +148,27 @@ class SearchFragment : Fragment() {
     private fun initObservers() {
         searchViewModel.searchResults.observe(viewLifecycleOwner) { meals ->
             Log.d("SearchFragment", "Meals updated: ${meals?.size ?: 0} items")
-            mealsAdapter.submitList(meals)
+            mealsAdapter.submitList(meals ?: emptyList())
             progressBar.visibility = View.GONE
             rvMeals.scrollToPosition(0)
+            val query = etSearch.text.toString().trim()
+            val hasActiveFilter = currentCountrySelection != null || currentIngredientSelection != null || currentCategorySelection != null
+            if (meals.isNullOrEmpty() && (query.isNotEmpty() || hasActiveFilter)) {
+                noResultsTextView.visibility = View.VISIBLE
+                val categoryMessage = when {
+                    currentCountrySelection != null -> " in $currentCountrySelection cuisine"
+                    currentIngredientSelection != null -> " with $currentIngredientSelection"
+                    currentCategorySelection != null -> " in $currentCategorySelection category"
+                    else -> ""
+                }
+                noResultsTextView.text = if (query.isNotEmpty()) {
+                    "No meals found for '$query'$categoryMessage."
+                } else {
+                    "No meals found$categoryMessage."
+                }
+            } else {
+                noResultsTextView.visibility = View.GONE
+            }
         }
     }
 
@@ -163,8 +189,10 @@ class SearchFragment : Fragment() {
                         progressBar.visibility = View.VISIBLE
                         performSearch("")
                     } else {
+                        searchViewModel.resetSelections()
                         mealsAdapter.submitList(emptyList())
                         progressBar.visibility = View.GONE
+                        noResultsTextView.visibility = View.GONE
                     }
                 }
             }
@@ -197,16 +225,51 @@ class SearchFragment : Fragment() {
 
         chipCountry.setOnCloseIconClickListener {
             resetChip(chipCountry)
+            // إذا لم يكن هناك نص بحث، أخفِ noResultsTextView
+            if (etSearch.text.toString().trim().isEmpty()) {
+                noResultsTextView.visibility = View.GONE
+            }
             performSearch("")
         }
         chipIngredient.setOnCloseIconClickListener {
             resetChip(chipIngredient)
+            if (etSearch.text.toString().trim().isEmpty()) {
+                noResultsTextView.visibility = View.GONE
+            }
             performSearch("")
         }
         chipCategory.setOnCloseIconClickListener {
             resetChip(chipCategory)
+            if (etSearch.text.toString().trim().isEmpty()) {
+                noResultsTextView.visibility = View.GONE
+            }
             performSearch("")
         }
+    }
+
+    private fun performSearchWithInternetCheck(query: String) {
+        if (NetworkUtils.isInternetAvailable(requireContext())) {
+            progressBar.visibility = View.VISIBLE
+            performSearch(query)
+        } else {
+            progressBar.visibility = View.GONE
+            showNoInternetDialog()
+        }
+    }
+
+    private fun showNoInternetDialog() {
+        CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOk(
+            context = requireContext(),
+            title = "No Internet Connection",
+            message = "Please connect to the internet to search for meals.",
+            positiveBtnMsg = "OK",
+            positiveBtnFun = {}
+        )
+    }
+
+    private fun performSearch(query: String) {
+        Log.d("SearchFragment", "Performing search for query: $query, Type: $currentSearchType")
+        searchViewModel.searchMealsByName(query, currentSearchType)
     }
 
     private fun resetAllSelectionsExcept(exceptType: SearchViewModel.SearchType) {
@@ -226,7 +289,6 @@ class SearchFragment : Fragment() {
             chipCategory.isCloseIconVisible = false
         }
         updateChipText(null)
-        // إزالة استدعاء resetSelections لتجنب إفراغ الاختيارات في SearchViewModel
     }
 
     private fun resetChip(chip: Chip) {
@@ -255,7 +317,15 @@ class SearchFragment : Fragment() {
         val previousIngredientSelection = currentIngredientSelection
         val previousCategorySelection = currentCategorySelection
 
+        if (!NetworkUtils.isInternetAvailable(requireContext())) {
+            Log.d("SearchFragment", "No internet, showing dialog instead of BottomSheet")
+            showNoInternetDialog()
+            return
+        }
+
+        Log.d("SearchFragment", "Internet available, fetching suggestions for type: $currentSearchType")
         val bottomSheet = SuggestionsBottomSheet.newInstance(currentSearchType ?: SearchViewModel.SearchType.COUNTRY) { selectedSuggestion ->
+            Log.d("SearchFragment", "BottomSheet callback triggered with selection: $selectedSuggestion")
             if (selectedSuggestion != null) {
                 when (currentSearchType) {
                     SearchViewModel.SearchType.COUNTRY -> {
@@ -264,7 +334,9 @@ class SearchFragment : Fragment() {
                         chipCountry.isCloseIconVisible = true
                         searchViewModel.setSelectedCategory(SearchViewModel.SearchType.COUNTRY, selectedSuggestion)
                         updateChipText(selectedSuggestion)
-                        searchViewModel.searchMealsByName("", currentSearchType)
+                        Log.d("SearchFragment", "Country selected: $selectedSuggestion, triggering search")
+                        progressBar.visibility = View.VISIBLE
+                        performSearch("")
                     }
                     SearchViewModel.SearchType.INGREDIENT -> {
                         currentIngredientSelection = selectedSuggestion
@@ -272,7 +344,9 @@ class SearchFragment : Fragment() {
                         chipIngredient.isCloseIconVisible = true
                         searchViewModel.setSelectedCategory(SearchViewModel.SearchType.INGREDIENT, selectedSuggestion)
                         updateChipText(selectedSuggestion)
-                        searchViewModel.searchMealsByName("", currentSearchType)
+                        Log.d("SearchFragment", "Ingredient selected: $selectedSuggestion, triggering search")
+                        progressBar.visibility = View.VISIBLE
+                        performSearch("")
                     }
                     SearchViewModel.SearchType.CATEGORY -> {
                         currentCategorySelection = selectedSuggestion
@@ -280,14 +354,17 @@ class SearchFragment : Fragment() {
                         chipCategory.isCloseIconVisible = true
                         searchViewModel.setSelectedCategory(SearchViewModel.SearchType.CATEGORY, selectedSuggestion)
                         updateChipText(selectedSuggestion)
-                        searchViewModel.searchMealsByName("", currentSearchType)
+                        Log.d("SearchFragment", "Category selected: $selectedSuggestion, triggering search")
+                        progressBar.visibility = View.VISIBLE
+                        performSearch("")
                     }
                     else -> {
+                        Log.e("SearchFragment", "Unexpected search type: $currentSearchType")
                         progressBar.visibility = View.GONE
                     }
                 }
             } else {
-                // الاحتفاظ بالاختيار السابق إذا كان موجودًا
+                Log.d("SearchFragment", "No suggestion selected, handling previous selection")
                 when (currentSearchType) {
                     SearchViewModel.SearchType.COUNTRY -> {
                         if (previousCountrySelection != null) {
@@ -296,7 +373,9 @@ class SearchFragment : Fragment() {
                             chipCountry.isCloseIconVisible = true
                             chipCountry.text = previousCountrySelection
                             searchViewModel.setSelectedCategory(SearchViewModel.SearchType.COUNTRY, previousCountrySelection)
-                            searchViewModel.searchMealsByName("", currentSearchType)
+                            Log.d("SearchFragment", "Restoring previous country selection: $previousCountrySelection")
+                            progressBar.visibility = View.VISIBLE
+                            performSearch("")
                         } else {
                             currentCountrySelection = null
                             chipCountry.isChecked = false
@@ -304,6 +383,7 @@ class SearchFragment : Fragment() {
                             chipCountry.text = "Country"
                             searchViewModel.resetSelections()
                             mealsAdapter.submitList(emptyList())
+                            Log.d("SearchFragment", "No previous country selection, resetting")
                         }
                     }
                     SearchViewModel.SearchType.INGREDIENT -> {
@@ -313,7 +393,9 @@ class SearchFragment : Fragment() {
                             chipIngredient.isCloseIconVisible = true
                             chipIngredient.text = previousIngredientSelection
                             searchViewModel.setSelectedCategory(SearchViewModel.SearchType.INGREDIENT, previousIngredientSelection)
-                            searchViewModel.searchMealsByName("", currentSearchType)
+                            Log.d("SearchFragment", "Restoring previous ingredient selection: $previousIngredientSelection")
+                            progressBar.visibility = View.VISIBLE
+                            performSearch("")
                         } else {
                             currentIngredientSelection = null
                             chipIngredient.isChecked = false
@@ -321,6 +403,7 @@ class SearchFragment : Fragment() {
                             chipIngredient.text = "Ingredient"
                             searchViewModel.resetSelections()
                             mealsAdapter.submitList(emptyList())
+                            Log.d("SearchFragment", "No previous ingredient selection, resetting")
                         }
                     }
                     SearchViewModel.SearchType.CATEGORY -> {
@@ -330,7 +413,9 @@ class SearchFragment : Fragment() {
                             chipCategory.isCloseIconVisible = true
                             chipCategory.text = previousCategorySelection
                             searchViewModel.setSelectedCategory(SearchViewModel.SearchType.CATEGORY, previousCategorySelection)
-                            searchViewModel.searchMealsByName("", currentSearchType)
+                            Log.d("SearchFragment", "Restoring previous category selection: $previousCategorySelection")
+                            progressBar.visibility = View.VISIBLE
+                            performSearch("")
                         } else {
                             currentCategorySelection = null
                             chipCategory.isChecked = false
@@ -338,19 +423,17 @@ class SearchFragment : Fragment() {
                             chipCategory.text = "Category"
                             searchViewModel.resetSelections()
                             mealsAdapter.submitList(emptyList())
+                            Log.d("SearchFragment", "No previous category selection, resetting")
                         }
                     }
-                    else -> {}
+                    else -> {
+                        Log.e("SearchFragment", "Unexpected search type on reset: $currentSearchType")
+                    }
                 }
                 progressBar.visibility = View.GONE
             }
         }
         bottomSheet.show(childFragmentManager, SuggestionsBottomSheet.TAG)
-    }
-
-    private fun performSearch(query: String) {
-        Log.d("SearchFragment", "Performing search for query: $query, Type: $currentSearchType")
-        searchViewModel.searchMealsByName(query, currentSearchType)
     }
 
     private fun updateChipText(selectedSuggestion: String?) {
@@ -369,6 +452,8 @@ class SearchFragment : Fragment() {
         chipCategory.text = categoryText
         chipCategory.isCloseIconVisible = currentCategorySelection != null
         chipCategory.isChecked = currentCategorySelection != null
+
+        Log.d("SearchFragment", "Updated chip text: Country=$countryText, Ingredient=$ingredientText, Category=$categoryText")
     }
 
     private fun hideKeyboard() {

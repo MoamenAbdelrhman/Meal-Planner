@@ -69,6 +69,16 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:visibility="gone" />
+    <TextView
+        android:id="@+id/noResultsTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/rvMeals"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:padding="16dp"
+        android:textSize="16sp"
+        android:visibility="gone" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvMeals"
@@ -76,5 +86,6 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
 
 </LinearLayout>

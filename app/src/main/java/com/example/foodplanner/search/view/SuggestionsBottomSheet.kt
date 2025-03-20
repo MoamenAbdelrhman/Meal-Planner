@@ -16,6 +16,7 @@ import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
 import com.example.foodplanner.search.adapter.SuggestionAdapter
 import com.example.foodplanner.search.viewmodel.SearchViewModel
 import com.example.foodplanner.search.viewmodel.SearchViewModelFactory
+import com.example.foodplanner.utils.NetworkUtils
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class SuggestionsBottomSheet : BottomSheetDialogFragment() {
@@ -31,11 +32,12 @@ class SuggestionsBottomSheet : BottomSheetDialogFragment() {
     private lateinit var etSearchSuggestions: EditText
     private lateinit var suggestionAdapter: SuggestionAdapter
     private var searchType: SearchViewModel.SearchType = SearchViewModel.SearchType.COUNTRY
-    private var onSuggestionSelected: ((String) -> Unit)? = null
+    private var onSuggestionSelected: ((String?) -> Unit)? = null
+    private var hasSelectedSuggestion: Boolean = false
 
     companion object {
         const val TAG = "SuggestionsBottomSheet"
-        fun newInstance(searchType: SearchViewModel.SearchType, onSuggestionSelected: (String) -> Unit): SuggestionsBottomSheet {
+        fun newInstance(searchType: SearchViewModel.SearchType, onSuggestionSelected: (String?) -> Unit): SuggestionsBottomSheet {
             return SuggestionsBottomSheet().apply {
                 this.searchType = searchType
                 this.onSuggestionSelected = onSuggestionSelected
@@ -57,13 +59,13 @@ class SuggestionsBottomSheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         suggestionAdapter = SuggestionAdapter { suggestion ->
+            hasSelectedSuggestion = true
             onSuggestionSelected?.invoke(suggestion)
-            dismiss() // إغلاق الـ BottomSheet بعد الاختيار
+            dismiss()
         }
         rvSuggestions.layoutManager = LinearLayoutManager(requireContext())
         rvSuggestions.adapter = suggestionAdapter
 
-        // مراقبة تغييرات نص البحث
         etSearchSuggestions.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
@@ -79,7 +81,13 @@ class SuggestionsBottomSheet : BottomSheetDialogFragment() {
             suggestionAdapter.submitList(suggestions)
         }
 
-        // تحديث الاقتراحات بناءً على نوع البحث
-        searchViewModel.updateSuggestions(searchType)
+        searchViewModel.updateSuggestions(searchType, requireContext())
+    }
+
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        if (!hasSelectedSuggestion) {
+            onSuggestionSelected?.invoke(null)
+        }
     }
 }

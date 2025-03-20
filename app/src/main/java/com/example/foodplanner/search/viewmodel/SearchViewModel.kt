@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.foodplanner.core.model.remote.Meal
 import com.example.foodplanner.core.model.remote.repository.MealRepository
 import com.example.foodplanner.search.model.SuggestionItem
+import com.example.foodplanner.utils.NetworkUtils
 import kotlinx.coroutines.launch
 
 class SearchViewModel(private val mealRepository: MealRepository) : ViewModel() {
@@ -30,7 +31,7 @@ class SearchViewModel(private val mealRepository: MealRepository) : ViewModel() 
         loadSuggestions()
     }
 
-    private fun loadSuggestions() {
+    fun loadSuggestions() {
         viewModelScope.launch {
             try {
                 val fetchedCountries = mealRepository.getCuisines().meals.map { it.strArea }
@@ -73,8 +74,19 @@ class SearchViewModel(private val mealRepository: MealRepository) : ViewModel() 
         }
     }
 
-    fun updateSuggestions(searchType: SearchType) {
+    fun updateSuggestions(searchType: SearchType, context: android.content.Context) {
         Log.d("SearchViewModel", "Updating suggestions for: $searchType")
+        if (!NetworkUtils.isInternetAvailable(context)) {
+            Log.d("SearchViewModel", "No internet, cannot update suggestions")
+            _suggestions.value = emptyList()
+            return
+        }
+
+        if (countries.isEmpty() || ingredients.isEmpty() || categories.isEmpty()) {
+            Log.d("SearchViewModel", "Suggestions are empty, reloading...")
+            loadSuggestions()
+        }
+
         _suggestions.value = when (searchType) {
             SearchType.COUNTRY -> countries
             SearchType.INGREDIENT -> ingredients

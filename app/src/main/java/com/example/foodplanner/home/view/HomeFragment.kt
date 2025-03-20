@@ -12,7 +12,6 @@ import android.widget.ImageView
 import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.activityViewModels
@@ -30,25 +29,23 @@ import com.example.foodplanner.R
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase
+import com.example.foodplanner.core.model.remote.Category
 import com.example.foodplanner.core.model.remote.Meal
 import com.example.foodplanner.core.model.remote.Response
 import com.example.foodplanner.core.model.remote.repository.MealRepositoryImpl
 import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
-import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder.createFailureResponse
-import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOk
-import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel
+import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder
 import com.example.foodplanner.core.viewmodel.DataViewModel
 import com.example.foodplanner.core.viewmodel.DataViewModelFactory
-import com.example.foodplanner.details.viewmodel.DetailsFactory
-import com.example.foodplanner.details.viewmodel.DetailsViewModel
 import com.example.foodplanner.home.view.adapter.AdapterRVCategories
 import com.example.foodplanner.home.view.adapter.AdapterRVItemMeal
 import com.example.foodplanner.home.viewModel.HomeFragmentViewModel
 import com.example.foodplanner.home.viewModel.HomeFragmentViewModelFactory
-import com.example.foodplanner.main.viewModel.RecipeActivityViewModel
-import com.example.foodplanner.main.viewModel.RecipeActivityViewModelFactory
+import com.example.foodplanner.main.viewModel.MainActivityViewModel
+import com.example.foodplanner.main.viewModel.MainActivityViewModelFactory
 import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModel
 import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModelFactory
+import com.example.foodplanner.utils.NetworkUtils
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.android.material.card.MaterialCardView
 import com.google.firebase.auth.FirebaseAuth
@@ -66,12 +63,12 @@ class HomeFragment : Fragment() {
         HomeFragmentViewModelFactory(mealRepository, userRepository)
     }
 
-    private val recipeViewModel: RecipeActivityViewModel by activityViewModels {
+    private val mainViewModel: MainActivityViewModel by activityViewModels {
         val userRepository = UserRepositoryImpl(
             LocalDataSourceImpl(UserDatabase.getDatabaseInstance(requireContext()).userDao()),
             FirebaseAuth.getInstance()
         )
-        RecipeActivityViewModelFactory(userRepository)
+        MainActivityViewModelFactory(userRepository)
     }
 
     private val dataViewModel: DataViewModel by activityViewModels {
@@ -111,14 +108,18 @@ class HomeFragment : Fragment() {
     private lateinit var searchBarHome: TextView
     private lateinit var mealImage: ImageView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private lateinit var noInternetImage: ImageView
+    private lateinit var nestedScrollView: androidx.core.widget.NestedScrollView
 
     private var favouriteState = false
     private var isCategoriesLoaded = false
-    private var selectedCategory: String? = null
+    private var selectedCategory: String? = null // To store the selected category for recyclerview_categories
     private var selectedCuisine: String? = null
     private var isDataLoaded = false
     private var mealOfTheDay: Meal? = null
     private var isInitialLoad = true
+    private var hasShownInitialNoInternetDialog = false
+    private var isRefreshed = false // To track the refresh state
 
     private val navOptions = NavOptions.Builder()
         .setEnterAnim(R.anim.slide_in_right)
@@ -136,29 +137,40 @@ class HomeFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) {
-            homeViewModel.getRandomCuisine { randomCuisine ->
-                selectedCuisine = randomCuisine
-                homeViewModel.getFilteredMealsByAreas(randomCuisine)
+            if (NetworkUtils.isInternetAvailable(requireContext())) {
+                loadInitialData()
+                isDataLoaded = true
+                isInitialLoad = true
+            } else {
+                hasShownInitialNoInternetDialog = false
             }
-
-            homeViewModel.getRandomCategory { randomCategory ->
-                selectedCategory = randomCategory
-                homeViewModel.getFilteredMealsByCategory(randomCategory)
-            }
-
-            homeViewModel.getRandomMeal()
-            homeViewModel.getRandomMeals(10)
-            homeViewModel.getCategories()
-            isDataLoaded = true
-            isInitialLoad = true
         } else {
-            selectedCategory = savedInstanceState.getString("selectedCategory", null)
+            // Restore the state
+            isRefreshed = savedInstanceState.getBoolean("isRefreshed", false)
+            // Restore selectedCategory only if no refresh was performed
+            selectedCategory = if (!isRefreshed) savedInstanceState.getString("selectedCategory", null) else null
             selectedCuisine = savedInstanceState.getString("selectedCuisine", null)
             isInitialLoad = false
-
-            selectedCuisine?.let { homeViewModel.getFilteredMealsByAreas(it) }
-            selectedCategory?.let { homeViewModel.getFilteredMealsByCategory(it) }
+            hasShownInitialNoInternetDialog = savedInstanceState.getBoolean("hasShownInitialNoInternetDialog", false)
+            isDataLoaded = savedInstanceState.getBoolean("isDataLoaded", false)
         }
+    }
+
+    // Loads initial data for the fragment without setting a selected category
+    private fun loadInitialData() {
+        homeViewModel.getRandomCuisine({ randomCuisine ->
+            selectedCuisine = randomCuisine
+            homeViewModel.getFilteredMealsByAreas(randomCuisine, requireContext())
+        }, requireContext())
+
+        // Load meals based on a random category, but do not set selectedCategory
+        homeViewModel.getRandomCategory({ randomCategory ->
+            homeViewModel.getFilteredMealsByCategory(randomCategory, requireContext())
+        }, requireContext())
+
+        homeViewModel.getRandomMeal(requireContext())
+        homeViewModel.getRandomMeals(10, context = requireContext())
+        homeViewModel.getCategories(requireContext())
     }
 
     override fun onCreateView(
@@ -167,8 +179,9 @@ class HomeFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
         initializeUi(view)
+
         searchBarHome.setOnClickListener {
-            recipeViewModel.navigateTo(R.id.action_search)
+            mainViewModel.navigateTo(R.id.action_search)
         }
 
         btnCuisines.setOnClickListener {
@@ -181,18 +194,19 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initObservers()
+        checkInternetAndLoadData()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        selectedCategory?.let {
-            outState.putString("selectedCategory", it)
-        }
-        selectedCuisine?.let {
-            outState.putString("selectedCuisine", it)
-        }
+        outState.putString("selectedCategory", selectedCategory) // Save the selected category
+        selectedCuisine?.let { outState.putString("selectedCuisine", it) }
+        outState.putBoolean("hasShownInitialNoInternetDialog", hasShownInitialNoInternetDialog)
+        outState.putBoolean("isDataLoaded", isDataLoaded)
+        outState.putBoolean("isRefreshed", isRefreshed) // Save the refresh state
     }
 
+    // Initializes the UI components and sets up the RecyclerViews, adapters, and click listeners
     private fun initializeUi(view: View) {
         recyclerViewCategories = view.findViewById(R.id.recyclerview_categories)
         recyclerViewCategoriesItems = view.findViewById(R.id.recyclerview_mealByCategories)
@@ -220,7 +234,8 @@ class HomeFragment : Fragment() {
             }
         }
 
-        categoriesAdapter = AdapterRVCategories(listOf()) { name -> goToSearchCategories(name) }
+        // Pass selectedCategory to AdapterRVCategories during initialization
+        categoriesAdapter = AdapterRVCategories(listOf(), selectedCategory) { name -> goToSearchCategories(name) }
         categoriesItemAdapter = AdapterRVItemMeal(
             listOf(),
             { id -> goToDetails(id) },
@@ -264,24 +279,85 @@ class HomeFragment : Fragment() {
             ?.findNavController()
 
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout)
+        noInternetImage = view.findViewById(R.id.noInternetImage)
+        nestedScrollView = view.findViewById(R.id.nestedScrollView)
+
+        noInternetImage.visibility = View.GONE
+
         swipeRefreshLayout.setOnRefreshListener {
-            refreshAllData()
+            hasShownInitialNoInternetDialog = false
+            isDataLoaded = false
+            checkInternetAndLoadData()
         }
     }
 
+    // Checks internet availability and loads data if available, otherwise shows a no-internet dialog
+    private fun checkInternetAndLoadData() {
+        if (NetworkUtils.isInternetAvailable(requireContext())) {
+            noInternetImage.visibility = View.GONE
+            nestedScrollView.visibility = View.VISIBLE
+            if (!isDataLoaded) {
+                refreshAllData()
+                isDataLoaded = true
+            }
+        } else {
+            noInternetImage.visibility = View.VISIBLE
+            nestedScrollView.visibility = View.GONE
+            swipeRefreshLayout.isRefreshing = false
+            stopAllShimmers()
+            if (!hasShownInitialNoInternetDialog) {
+                showNoInternetDialog()
+                hasShownInitialNoInternetDialog = false
+            }
+        }
+    }
+
+    // Displays a dialog to inform the user of no internet connection with retry and cancel options
+    private fun showNoInternetDialog() {
+        CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel(
+            context = requireContext(),
+            title = "No Internet Connection",
+            message = "Please check your internet connection and try again.",
+            positiveBtnMsg = "Retry",
+            negativeBtnMsg = "Cancel",
+            positiveBtnFun = {
+                checkInternetAndLoadData()
+            }
+        )
+    }
+
+    // Stops all shimmer effects and hides them
+    private fun stopAllShimmers() {
+        shimmerMealOfDay.stopShimmer()
+        shimmerMealOfDay.visibility = View.GONE
+        shimmerCategories.stopShimmer()
+        shimmerCategories.visibility = View.GONE
+        shimmerCategoriesItem.stopShimmer()
+        shimmerCategoriesItem.visibility = View.GONE
+        shimmerRecommendations.stopShimmer()
+        shimmerRecommendations.visibility = View.GONE
+        shimmerCuisine.stopShimmer()
+        shimmerCuisine.visibility = View.GONE
+    }
+
+    // Refreshes all data in the fragment, resetting selections and reloading content
     private fun refreshAllData() {
         isDataLoaded = false
         isInitialLoad = true
         selectedCategory = null
         selectedCuisine = null
+        isRefreshed = true
 
-        // Clear the RecyclerView adapters
-        categoriesAdapter.submitList(emptyList())
+        // Reset categorySearch in dataViewModel to avoid using an old value
+        dataViewModel.updateSearchCategory(null)
+
+        categoriesAdapter.resetSelection()
+
+        categoriesAdapter.submitList(emptyList(), null)
         categoriesItemAdapter.submitList(emptyList())
         recommendationsAdapter.submitList(emptyList())
         cuisineAdapter.submitList(emptyList())
 
-        // Reset and show all Shimmer effects
         shimmerMealOfDay.visibility = View.VISIBLE
         shimmerMealOfDay.startShimmer()
 
@@ -297,44 +373,48 @@ class HomeFragment : Fragment() {
         shimmerCuisine.visibility = View.VISIBLE
         shimmerCuisine.startShimmer()
 
-        // Disable the "Add to Plan" button while loading
         btnAddToPlan.isEnabled = false
 
-        // Reload data
-        homeViewModel.getRandomMeal()
-        homeViewModel.getRandomMeals(10)
-        homeViewModel.getCategories()
+        homeViewModel.getRandomMeal(requireContext())
+        homeViewModel.getRandomMeals(10, context = requireContext())
+        homeViewModel.getCategories(requireContext())
 
-        homeViewModel.getRandomCategory { randomCategory ->
-            selectedCategory = randomCategory
-            homeViewModel.getFilteredMealsByCategory(randomCategory)
-        }
+        // Load meals based on a random category, but do not set selectedCategory
+        homeViewModel.getRandomCategory({ randomCategory ->
+            homeViewModel.getFilteredMealsByCategory(randomCategory, requireContext())
+        }, requireContext())
 
-        homeViewModel.getRandomCuisine { randomCuisine ->
+        homeViewModel.getRandomCuisine({ randomCuisine ->
             selectedCuisine = randomCuisine
-            homeViewModel.getFilteredMealsByAreas(randomCuisine)
-        }
+            homeViewModel.getFilteredMealsByAreas(randomCuisine, requireContext())
+        }, requireContext())
 
-        // Stop the SwipeRefreshLayout spinner
         swipeRefreshLayout.isRefreshing = false
     }
 
+
+    // Sets up observers for LiveData objects to update the UI based on data changes
     private fun initObservers() {
+
+        // Observes the favorite state of a meal and updates the local favouriteState variable
         dataViewModel.isFavourite.observe(viewLifecycleOwner, Observer { isFavourite ->
             favouriteState = isFavourite
         })
 
+        // Observes the selected category for search and updates the UI if it's the initial load and no refresh has occurred
         dataViewModel.categorySearch.observe(viewLifecycleOwner) { category ->
             category?.let {
-                if (isInitialLoad) {
+                // Update selectedCategory only if no refresh was performed and this is the initial load
+                if (isInitialLoad && !isRefreshed) {
                     selectedCategory = it
-                    homeViewModel.getFilteredMealsByCategory(it)
+                    homeViewModel.getFilteredMealsByCategory(it, requireContext())
                     isInitialLoad = false
                 }
             }
         }
 
         with(dataViewModel) {
+            // Observes the list of cuisines and populates the popup menu with the available cuisines
             cuisinesData.observe(viewLifecycleOwner) { data ->
                 data?.forEachIndexed { index, item ->
                     popup.menu.add(0, index, 0, item)
@@ -343,10 +423,10 @@ class HomeFragment : Fragment() {
         }
 
         with(homeViewModel) {
+            // Observes the random meal of the day and updates the free trial card with the meal details
             randomMeal.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
-                        // Ensure Shimmer is visible and running
                         shimmerMealOfDay.visibility = View.VISIBLE
                         shimmerMealOfDay.startShimmer()
                         cardViewFreeTrial.visibility = View.INVISIBLE
@@ -365,34 +445,36 @@ class HomeFragment : Fragment() {
                         btnAddToPlan.isEnabled = true
                     }
                     is Response.Failure -> {
-                        getRandomMeal()
+                        getRandomMeal(requireContext())
                     }
                 }
             }
 
+            // Observes the list of categories and updates the categories RecyclerView with the fetched data
             dataCategories.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
-                        // Ensure Shimmer is visible and running
+                        categoriesAdapter.submitList(emptyList(), selectedCategory)
                         shimmerCategories.visibility = View.VISIBLE
                         shimmerCategories.startShimmer()
                     }
                     is Response.Success -> {
                         shimmerCategories.stopShimmer()
                         shimmerCategories.visibility = View.GONE
-                        categoriesAdapter.submitList(response.data.categories)
+                        categoriesAdapter.submitList(response.data.categories, selectedCategory)
                         isCategoriesLoaded = true
                     }
                     is Response.Failure -> {
-                        getCategories()
+                        getCategories(requireContext())
                     }
                 }
             }
 
+            // Observes meals filtered by category and updates the meals RecyclerView for the selected category
             filteredMealsByCategory.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
-                        // Ensure Shimmer is visible and running
+                        categoriesItemAdapter.submitList(emptyList())
                         shimmerCategoriesItem.visibility = View.VISIBLE
                         shimmerCategoriesItem.startShimmer()
                     }
@@ -404,18 +486,19 @@ class HomeFragment : Fragment() {
                         }
                     }
                     is Response.Failure -> {
-                        homeViewModel.getRandomCategory { randomCategory ->
-                            selectedCategory = randomCategory
-                            homeViewModel.getFilteredMealsByCategory(randomCategory)
-                        }
+                        // Load meals based on a random category, but do not set selectedCategory
+                        homeViewModel.getRandomCategory( { randomCategory ->
+                            homeViewModel.getFilteredMealsByCategory(randomCategory, requireContext())
+                        }, requireContext())
                     }
                 }
             }
 
+            // Observes recommended meals and updates the recommendations RecyclerView with the fetched meals
             someRecommendedMeals.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
-                        // Ensure Shimmer is visible and running
+                        recommendationsAdapter.submitList(emptyList())
                         shimmerRecommendations.visibility = View.VISIBLE
                         shimmerRecommendations.startShimmer()
                     }
@@ -425,15 +508,16 @@ class HomeFragment : Fragment() {
                         recommendationsAdapter.submitList(response.data)
                     }
                     is Response.Failure -> {
-                        getRandomMeals(10)
+                        getRandomMeals(10, context = requireContext())
                     }
                 }
             }
 
+            // Observes meals filtered by area (cuisine) and updates the cuisine RecyclerView with the fetched meals
             filteredMealsByAreas.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
-                        // Ensure Shimmer is visible and running
+                        cuisineAdapter.submitList(emptyList())
                         shimmerCuisine.visibility = View.VISIBLE
                         shimmerCuisine.startShimmer()
                     }
@@ -446,34 +530,41 @@ class HomeFragment : Fragment() {
                         }
                     }
                     is Response.Failure -> {
-                        homeViewModel.getRandomCuisine { randomCuisine ->
+                        homeViewModel.getRandomCuisine( { randomCuisine ->
                             selectedCuisine = randomCuisine
-                            homeViewModel.getFilteredMealsByAreas(randomCuisine)
-                        }
+                            getFilteredMealsByAreas(randomCuisine, requireContext())
+                        },requireContext())
                     }
                 }
             }
         }
     }
 
+    // Configures a RecyclerView with a horizontal LinearLayoutManager
     private fun setupRecyclerView(recyclerView: RecyclerView) {
         recyclerView.layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
     }
 
+    // Navigates to the details screen for a specific meal
     private fun goToDetails(id: String) {
         dataViewModel.setItemDetails(id)
         navController?.navigate(R.id.action_details, null, navOptions)
     }
 
+    // Handles category selection, updates the selected category, and refreshes the meals list
     private fun goToSearchCategories(name: String) {
         if (selectedCategory != name) {
             selectedCategory = name
             dataViewModel.updateSearchCategory(name)
-            homeViewModel.getFilteredMealsByCategory(name)
+            homeViewModel.getFilteredMealsByCategory(name, requireContext())
+            // Update the Adapter with the newly selected category
+            categoriesAdapter.submitList(categoriesAdapter.getCurrentList(), selectedCategory)
+            isRefreshed = false
         }
     }
 
+    // Changes the favorite state of a meal and notifies the caller of the result
     private fun changeFavouriteState(
         recipeId: String,
         isChange: Boolean,
@@ -486,8 +577,9 @@ class HomeFragment : Fragment() {
         }
     }
 
+    // Sets up the popup menu for cuisines and handles cuisine selection
     private fun setupCuisinesPopup() {
-        homeViewModel.getAllCuisines()
+        homeViewModel.getAllCuisines(requireContext())
 
         homeViewModel.allCuisines.observe(viewLifecycleOwner) { response ->
             when (response) {
@@ -503,7 +595,6 @@ class HomeFragment : Fragment() {
                     }
                 }
                 is Response.Failure -> {
-                    Log.e("HomeFragment", "Failed to load cuisines")
                 }
             }
         }
@@ -515,12 +606,13 @@ class HomeFragment : Fragment() {
         popup.setOnMenuItemClickListener { item ->
             val selectedCuisineNew = item.title.toString()
             selectedCuisine = selectedCuisineNew
-            homeViewModel.getFilteredMealsByAreas(selectedCuisineNew)
+            homeViewModel.getFilteredMealsByAreas(selectedCuisineNew, requireContext())
             textViewCuisines.text = "$selectedCuisineNew Meals"
             true
         }
     }
 
+    // Updates the free trial card with the meal of the day
     private fun updateFreeTrialCard(meal: Meal?) {
         meal?.let {
             val textViewMealName = cardViewFreeTrial.findViewById<TextView>(R.id.meal_name)
@@ -535,6 +627,7 @@ class HomeFragment : Fragment() {
         }
     }
 
+    // Shows a dialog to add a meal to a specific day in the meal plan
     private fun showAddToPlanDialog(meal: Meal) {
         val days = arrayOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
         AlertDialog.Builder(requireContext())
@@ -546,5 +639,14 @@ class HomeFragment : Fragment() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    // Helper function to get the current list from categoriesAdapter
+    private fun AdapterRVCategories.getCurrentList(): List<Category> {
+        return this.javaClass.getDeclaredField("categories").let { field ->
+            field.isAccessible = true
+            @Suppress("UNCHECKED_CAST")
+            field.get(this) as List<Category>
+        }
     }
 }

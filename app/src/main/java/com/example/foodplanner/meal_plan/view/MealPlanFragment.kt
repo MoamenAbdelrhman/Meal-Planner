@@ -29,6 +29,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class MealPlanFragment : Fragment() {
 
+    // ViewModel for managing meal plan data
     private val mealPlanViewModel: MealPlanViewModel by activityViewModels {
         val userRepository = UserRepositoryImpl(
             LocalDataSourceImpl(UserDatabase.getDatabaseInstance(requireContext()).userDao()),
@@ -37,6 +38,7 @@ class MealPlanFragment : Fragment() {
         MealPlanViewModelFactory(userRepository, requireContext())
     }
 
+    // ViewModel for handling navigation to meal details
     private val dataViewModel: DataViewModel by activityViewModels {
         val userRepository = UserRepositoryImpl(
             LocalDataSourceImpl(UserDatabase.getDatabaseInstance(requireContext()).userDao()),
@@ -53,6 +55,7 @@ class MealPlanFragment : Fragment() {
     private lateinit var mealPlanAdapter: MealPlanAdapter
     private var navController: NavController? = null
 
+    // Navigation options for smooth transitions
     private val navOptions = NavOptions.Builder()
         .setEnterAnim(R.anim.slide_in_right)
         .setPopExitAnim(R.anim.slide_out_right)
@@ -62,6 +65,7 @@ class MealPlanFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_meal_plan, container, false)
     }
 
@@ -69,21 +73,19 @@ class MealPlanFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         initializeUi(view)
 
+        // Observe loading state to delay UI updates until data is ready
         mealPlanViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
             if (isLoading == false) {
                 initObservers()
             }
         }
 
+        // Initialize the navigation controller
         navController = requireActivity().supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment)?.findNavController()
-
-        // التأكد من بدء المزامنة إذا لم تبدأ بعد
-        FirebaseAuth.getInstance().currentUser?.uid?.let { userId ->
-            mealPlanViewModel.startMealPlansSync(userId)
-        }
     }
 
+    // Set up the RecyclerView and adapter
     private fun initializeUi(view: View) {
         rvMealPlan = view.findViewById(R.id.rvMealPlan)
         mealPlanAdapter = MealPlanAdapter(
@@ -95,17 +97,19 @@ class MealPlanFragment : Fragment() {
         rvMealPlan.adapter = mealPlanAdapter
     }
 
+    // Set up observers for LiveData to update the UI
     private fun initObservers() {
         mealPlanViewModel.weeklyMealPlan.observe(viewLifecycleOwner) { mealPlan ->
             mealPlan?.let {
                 Log.d(TAG, "Meal plan updated: $it")
-                mealPlanAdapter.submitList(it)
+                mealPlanAdapter.submitList(it) // Update the adapter with new data
             } ?: run {
                 Log.d(TAG, "Meal plan is null")
             }
         }
     }
 
+    // Navigate to meal details if internet is available
     private fun goToDetails(id: String) {
         Log.d(TAG, "goToDetails called with id: $id")
         if (NetworkUtils.isInternetAvailable(requireContext())) {

@@ -17,7 +17,7 @@
             <ImageView
                 android:id="@+id/ivMealImage"
                 android:layout_width="200dp"
-                android:layout_height="140dp"
+                android:layout_height="170dp"
                 android:scaleType="centerCrop"
                 android:contentDescription="Meal Image" />
 
@@ -40,13 +40,14 @@
                 android:minLines="3"
                 android:textSize="16sp"
                 android:textStyle="bold"
+                android:textColor="@color/mycolor"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnAddToPlan"
-                android:layout_width="130dp"
+                android:layout_width="120dp"
                 android:layout_height="35dp"
                 android:layout_gravity="end"
                 android:layout_marginEnd="10dp"
