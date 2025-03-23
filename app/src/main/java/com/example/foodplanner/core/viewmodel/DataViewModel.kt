@@ -6,8 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.foodplanner.core.model.FavouriteMealDao
-import com.example.foodplanner.core.model.FavouriteMealEntity
+import com.example.foodplanner.core.model.remote.source.FavouriteMealDao
 import com.example.foodplanner.core.model.local.repository.UserRepository
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
@@ -32,6 +31,7 @@ class DataViewModel(
 ) : ViewModel() {
 
     companion object {
+        // Factory method to create an instance of DataViewModel with required dependencies
         fun create(context: Context): DataViewModel {
             val database = UserDatabase.getDatabaseInstance(context)
             val userRepository = UserRepositoryImpl(
@@ -56,9 +56,6 @@ class DataViewModel(
     private val _categorySearch = MutableLiveData<String?>()
     val categorySearch: LiveData<String?> get() = _categorySearch
 
-    private val _mainCuisine = MutableLiveData<String?>()
-    val mainCuisine: LiveData<String?> get() = _mainCuisine
-
     private val _itemDetails = MutableLiveData<String>()
     val itemDetails: LiveData<String> get() = _itemDetails
 
@@ -70,11 +67,11 @@ class DataViewModel(
 
     init {
         _categorySearch.value = null
-        _mainCuisine.value = null
         _isLoading.value = false
         loadCurrentUser()
     }
 
+    // Load the current user's ID and initialize favorite items if a user is logged in
     private fun loadCurrentUser() {
         viewModelScope.launch {
             currentUserId = userRepository.getCurrentUserId()
@@ -89,6 +86,7 @@ class DataViewModel(
         }
     }
 
+    // Start syncing favorite meals with Firebase Realtime Database for the given user
     fun startFavoritesSync(userId: String) {
         if (favoritesListener != null) return
         _isLoading.value = true
@@ -129,6 +127,7 @@ class DataViewModel(
         }
     }
 
+    // Stop syncing favorite meals by removing the Firebase listener
     fun stopFavoritesSync() {
         currentUserId?.let { uid ->
             val favoritesRef = FirebaseDatabase.getInstance().getReference("/users/$uid/favorites")
@@ -137,6 +136,7 @@ class DataViewModel(
         favoritesListener = null
     }
 
+    // Load favorite meal IDs from the local database and update the meals list
     private fun loadFavoriteItems() {
         viewModelScope.launch {
             currentUserId?.let { userId ->
@@ -150,7 +150,7 @@ class DataViewModel(
         }
     }
 
-
+    // Fetch favorite meals from the local database and update the LiveData
     private fun getMeals() {
         viewModelScope.launch {
             currentUserId?.let { userId ->
@@ -162,6 +162,7 @@ class DataViewModel(
         }
     }
 
+    // Add or remove a meal from favorites and sync with Firebase and local database
     suspend fun changeFavouriteState(recipeId: String, isChange: Boolean) {
         currentUserId?.let { userId ->
             val currentFavourites = _favouritesList.value?.toMutableSet() ?: mutableSetOf()
@@ -189,10 +190,12 @@ class DataViewModel(
         }
     }
 
+    // Retrieve a meal by its ID from the remote repository
     suspend fun getMealById(mealId: String): Meal? {
         return mealRepository.getMealById(mealId)
     }
 
+    // Update the category used for searching or filtering meals
     fun updateSearchCategory(category: String?) {
         _categorySearch.value = category
         Log.d("DataViewModel", "Updated search category: $category")
@@ -202,13 +205,8 @@ class DataViewModel(
         _itemDetails.value = id
     }
 
-    fun setCuisines(cuisines: List<String>) {
-        _cuisinesData.value = cuisines
-        viewModelScope.launch {
-            userRepository.updateCuisines(cuisines)
-        }
-    }
 
+    // Clean up resources by stopping Firebase sync when the ViewModel is cleared
     override fun onCleared() {
         super.onCleared()
         stopFavoritesSync()

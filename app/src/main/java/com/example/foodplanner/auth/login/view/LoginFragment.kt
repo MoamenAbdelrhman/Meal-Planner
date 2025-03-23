@@ -121,6 +121,7 @@ class LoginFragment : Fragment() {
         }
     }
 
+    // Validate email and password inputs before login attempt
     private fun validateInputs(email: String, password: String): Boolean {
         return when {
             email.isEmpty() -> {
@@ -143,6 +144,7 @@ class LoginFragment : Fragment() {
         }
     }
 
+    // Set up Google Sign-In client with required options
     private fun setupGoogleSignIn() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
@@ -152,6 +154,7 @@ class LoginFragment : Fragment() {
         googleSignInClient = GoogleSignIn.getClient(requireActivity(), gso)
     }
 
+    // Initiate Google Sign-In flow by launching the sign-in intent
     private fun signInWithGoogle() {
         googleSignInClient.signOut().addOnCompleteListener(requireActivity()) {
             val signInIntent = googleSignInClient.signInIntent
@@ -159,6 +162,7 @@ class LoginFragment : Fragment() {
         }
     }
 
+    // Handle the result of Google Sign-In and authenticate with Firebase
     private fun handleSignInResult(task: Task<GoogleSignInAccount>) {
         try {
             val account = task.getResult(ApiException::class.java)
@@ -169,12 +173,18 @@ class LoginFragment : Fragment() {
         }
     }
 
+    // Observe ViewModel for login status, errors, and loading state
     private fun observeViewModel() {
         viewModel.loginSuccess.observe(viewLifecycleOwner) { success ->
             if (success) {
                 Log.d("LoginFragment", "Login successful, navigating to MainActivity")
                 viewModel.loginSuccess.removeObservers(viewLifecycleOwner)
-                findNavController().navigate(R.id.action_loginFragment_to_mainActivity)
+
+                val intent = Intent(requireContext(), MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    putExtra("IS_GUEST", false)
+                }
+                startActivity(intent)
                 requireActivity().finish()
                 Log.d("LoginFragment", "AuthActivity finished")
             }
@@ -194,6 +204,7 @@ class LoginFragment : Fragment() {
         }
     }
 
+    // Check if the email is associated with a Google account for sign-in
     private fun checkIfGoogleAccount(email: String) {
         if (email.isEmpty()) {
             errorTextView.text = getString(R.string.email_required)
@@ -221,6 +232,7 @@ class LoginFragment : Fragment() {
             }
     }
 
+    // Check if the email exists in the local database for Google account linking
     private fun checkLocalUser(email: String) {
         lifecycleScope.launch(Dispatchers.IO) {
             val userRepository = UserRepositoryImpl(
@@ -240,6 +252,7 @@ class LoginFragment : Fragment() {
         }
     }
 
+    // Display a toast message with the given text
     private fun showToast(message: String) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }

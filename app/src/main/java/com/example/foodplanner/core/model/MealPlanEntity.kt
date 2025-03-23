@@ -1,4 +1,4 @@
-package com.example.foodplanner.meal_plan.model
+package com.example.foodplanner.core.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -17,7 +17,7 @@ data class MealPlanEntity(
 fun MealPlanEntity.toMeal(): Meal {
     val gson = Gson()
     val meal = gson.fromJson(mealData, Meal::class.java)
-    meal.populateIngredientsWithMeasures() // ملء القائمة بعد التحويل
+    meal.populateIngredientsWithMeasures()
     return meal
 }
 

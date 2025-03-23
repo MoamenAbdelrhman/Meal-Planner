@@ -7,7 +7,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.foodplanner.core.model.MealEntity
-import com.example.foodplanner.core.model.UserEntity
 import com.example.foodplanner.core.model.local.User
 
 @Dao
@@ -62,13 +61,6 @@ interface UserDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(user: User)
-
-    /*@Query("SELECT * FROM user WHERE email = :email LIMIT 1")
-    suspend fun getUserByEmail(email: String): User?
-
-    @Query("SELECT * FROM user WHERE firebaseId = :firebaseUid LIMIT 1")
-    suspend fun getUserByFirebaseUid(firebaseUid: String): User?*/
-
 
     @Query("SELECT * FROM user WHERE isLoggedIn = 1 LIMIT 1")
     suspend fun getLoggedInUser(): User?

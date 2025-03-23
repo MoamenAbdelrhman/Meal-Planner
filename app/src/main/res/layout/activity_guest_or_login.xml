@@ -26,16 +26,16 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Would you like to log in or continue as a guest?"
-        android:textSize="18sp"
-        android:layout_marginBottom="24dp"/>
+        android:layout_marginBottom="24dp"
+        android:text="Would you like to log in\n or continue as a guest?"
+        android:textSize="20sp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_login"
-        android:layout_width="110dp"
-        android:layout_height="50dp"
+        android:layout_width="150dp"
+        android:layout_height="60dp"
         android:text="Log In"
-        android:textSize="16sp"
+        android:textSize="18sp"
         android:inputType="text"
         app:cornerRadius="18dp"
         android:layout_marginTop="10dp"

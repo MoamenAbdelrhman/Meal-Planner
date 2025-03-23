@@ -16,7 +16,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
 import android.view.animation.AnimationSet
-import com.example.foodplanner.auth.AuthActivity
 import com.example.foodplanner.auth.AuthViewModel
 import com.example.foodplanner.auth.AuthViewModelFactory
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
@@ -77,9 +76,13 @@ class SplashActivity : AppCompatActivity() {
                 val intent = if (isFirstRun) {
                     Intent(this, GuestOrLoginActivity::class.java)
                 } else {
-                    Intent(this, MainActivity::class.java).apply {
-                        putExtra("IS_GUEST", user == null)
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    if (user != null) {
+                        Intent(this, MainActivity::class.java).apply {
+                            putExtra("IS_GUEST", false)
+                            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        }
+                    } else {
+                        Intent(this, GuestOrLoginActivity::class.java)
                     }
                 }
                 startActivity(intent)

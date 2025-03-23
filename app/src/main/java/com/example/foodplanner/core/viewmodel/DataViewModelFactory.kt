@@ -2,7 +2,7 @@ package com.example.foodplanner.core.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.foodplanner.core.model.FavouriteMealDao
+import com.example.foodplanner.core.model.remote.source.FavouriteMealDao
 import com.example.foodplanner.core.model.local.repository.UserRepository
 import com.example.foodplanner.core.model.remote.repository.MealRepository
 

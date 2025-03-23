@@ -54,7 +54,6 @@ class FavouriteFragment : Fragment() {
         isGuest = requireActivity().intent.getBooleanExtra("IS_GUEST", false)
     }
 
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -66,9 +65,10 @@ class FavouriteFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         favouriteRecycle = view.findViewById(R.id.favouriteRecycle)
-        adapter = FavouriteRecyclerAdapter({ id, isChange, onComplete ->
-            changeFavouriteState(id, isChange, onComplete)
-        }, { id -> goToDetails(id) })
+        adapter = FavouriteRecyclerAdapter(
+            { id, isChange, onComplete -> changeFavouriteState(id, isChange, onComplete) },
+            { id -> goToDetails(id) }
+        )
 
         favouriteRecycle.layoutManager = GridLayoutManager(requireContext(), 2)
         favouriteRecycle.adapter = adapter
@@ -83,6 +83,7 @@ class FavouriteFragment : Fragment() {
         }
     }
 
+    // Set up observers for favorite meals and their state
     private fun initObservers() {
         dataViewModel.meals.observe(viewLifecycleOwner, Observer { recipes ->
             if (recipes != adapter.getCurrentMeals()) {
@@ -98,6 +99,7 @@ class FavouriteFragment : Fragment() {
         })
     }
 
+    // Change the favorite state of a meal with guest restrictions
     private fun changeFavouriteState(
         recipeId: String,
         isChange: Boolean,
@@ -133,6 +135,7 @@ class FavouriteFragment : Fragment() {
         }
     }
 
+    // Navigate to meal details screen with the given meal ID
     private fun goToDetails(id: String) {
         if (NetworkUtils.isInternetAvailable(requireContext())) {
             dataViewModel.setItemDetails(id)
@@ -150,6 +153,7 @@ class FavouriteFragment : Fragment() {
         }
     }
 
+    // Stop syncing favorite meals when the view is destroyed
     override fun onDestroyView() {
         super.onDestroyView()
         if (!isGuest) {
@@ -157,6 +161,7 @@ class FavouriteFragment : Fragment() {
         }
     }
 
+    // Get the current list of meals from the adapter using reflection
     private fun FavouriteRecyclerAdapter.getCurrentMeals(): List<Any> {
         return try {
             this.javaClass.getDeclaredField("meals").let { field ->

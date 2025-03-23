@@ -4,13 +4,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import com.example.foodplanner.core.model.local.repository.UserRepository
-import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 
 class MainActivityViewModel(
-
-    private val userRepository: UserRepository
 
 ) : ViewModel() {
 
@@ -22,10 +17,10 @@ class MainActivityViewModel(
     }
 }
 
-class MainActivityViewModelFactory(private val userRepository: UserRepositoryImpl) : ViewModelProvider.Factory {
+class MainActivityViewModelFactory: ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainActivityViewModel::class.java)) {
-            return MainActivityViewModel(userRepository) as T
+            return MainActivityViewModel() as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

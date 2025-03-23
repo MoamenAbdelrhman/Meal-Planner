@@ -16,7 +16,6 @@ import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
 import com.example.foodplanner.search.adapter.SuggestionAdapter
 import com.example.foodplanner.search.viewmodel.SearchViewModel
 import com.example.foodplanner.search.viewmodel.SearchViewModelFactory
-import com.example.foodplanner.utils.NetworkUtils
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class SuggestionsBottomSheet : BottomSheetDialogFragment() {

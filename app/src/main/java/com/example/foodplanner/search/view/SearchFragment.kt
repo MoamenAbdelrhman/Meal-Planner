@@ -83,7 +83,6 @@ class SearchFragment : Fragment() {
     private var currentCategorySelection: String? = null
     private var isGuest: Boolean = false
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         isGuest = FirebaseAuth.getInstance().currentUser == null ||
@@ -107,6 +106,7 @@ class SearchFragment : Fragment() {
         navController = findNavController()
     }
 
+    // Initialize UI components and set up the RecyclerView adapter
     private fun initializeUi(view: View) {
         etSearch = view.findViewById(R.id.etSearch)
         cgSearchType = view.findViewById(R.id.cgSearchType)
@@ -147,6 +147,7 @@ class SearchFragment : Fragment() {
         }
     }
 
+    // Set up observers for search results
     private fun initObservers() {
         searchViewModel.searchResults.observe(viewLifecycleOwner) { meals ->
             mealsAdapter.submitList(meals ?: emptyList())
@@ -173,6 +174,7 @@ class SearchFragment : Fragment() {
         }
     }
 
+    // Set up listeners for search input and filter chips
     private fun setupSearchListener() {
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
@@ -241,6 +243,7 @@ class SearchFragment : Fragment() {
         }
     }
 
+    // Perform search with internet availability check
     private fun performSearchWithInternetCheck(query: String) {
         if (NetworkUtils.isInternetAvailable(requireContext())) {
             progressBar.visibility = View.VISIBLE
@@ -251,6 +254,7 @@ class SearchFragment : Fragment() {
         }
     }
 
+    // Show a dialog when there is no internet connection
     private fun showNoInternetDialog() {
         CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOk(
             context = requireContext(),
@@ -261,10 +265,12 @@ class SearchFragment : Fragment() {
         )
     }
 
+    // Perform search based on the query and current search type
     private fun performSearch(query: String) {
         searchViewModel.searchMealsByName(query, currentSearchType)
     }
 
+    // Reset all filter selections except the specified type
     private fun resetAllSelectionsExcept(exceptType: SearchViewModel.SearchType) {
         if (exceptType != SearchViewModel.SearchType.COUNTRY) {
             currentCountrySelection = null
@@ -284,6 +290,7 @@ class SearchFragment : Fragment() {
         updateChipText(null)
     }
 
+    // Reset the specified chip and clear its selection
     private fun resetChip(chip: Chip) {
         when (chip.id) {
             R.id.chipCountry -> {
@@ -305,6 +312,7 @@ class SearchFragment : Fragment() {
         searchViewModel.resetSelections()
     }
 
+    // Show a bottom sheet for selecting search suggestions
     private fun showSuggestionsBottomSheet() {
         val previousCountrySelection = currentCountrySelection
         val previousIngredientSelection = currentIngredientSelection
@@ -415,6 +423,7 @@ class SearchFragment : Fragment() {
         bottomSheet.show(childFragmentManager, SuggestionsBottomSheet.TAG)
     }
 
+    // Update the text and state of filter chips based on selections
     private fun updateChipText(selectedSuggestion: String?) {
         val countryText = currentCountrySelection ?: "Country"
         val ingredientText = currentIngredientSelection ?: "Ingredient"
@@ -431,20 +440,22 @@ class SearchFragment : Fragment() {
         chipCategory.text = categoryText
         chipCategory.isCloseIconVisible = currentCategorySelection != null
         chipCategory.isChecked = currentCategorySelection != null
-
     }
 
+    // Hide the soft keyboard
     private fun hideKeyboard() {
         val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
         imm?.hideSoftInputFromWindow(etSearch.windowToken, 0)
     }
 
+    // Navigate to meal details screen with the given meal ID
     private fun goToDetails(id: String) {
         dataViewModel.setItemDetails(id)
         val action = SearchFragmentDirections.actionSearchToDetails(id)
         findNavController().navigate(action)
     }
 
+    // Handle adding a meal to the plan with guest restrictions
     private fun handleAddToPlanClick(meal: Meal) {
         if (isGuest) {
             showGuestRestrictionDialog("Guests cannot add meals to the plan. Please log in.")
@@ -453,6 +464,7 @@ class SearchFragment : Fragment() {
         }
     }
 
+    // Show a dialog to select a day for adding a meal to the plan
     private fun showAddToPlanDialog(meal: Meal) {
         Log.d("SearchFragment", "Showing day selection dialog for meal: ${meal.strMeal}")
         val days = arrayOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
@@ -467,6 +479,7 @@ class SearchFragment : Fragment() {
             .show()
     }
 
+    // Show a dialog for guest restrictions with an option to log in
     private fun showGuestRestrictionDialog(message: String) {
         CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel(
             context = requireContext(),

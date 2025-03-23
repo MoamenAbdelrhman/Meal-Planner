@@ -66,11 +66,7 @@ class HomeFragment : Fragment() {
     }
 
     private val mainViewModel: MainActivityViewModel by activityViewModels {
-        val userRepository = UserRepositoryImpl(
-            LocalDataSourceImpl(UserDatabase.getDatabaseInstance(requireContext()).userDao()),
-            FirebaseAuth.getInstance()
-        )
-        MainActivityViewModelFactory(userRepository)
+        MainActivityViewModelFactory()
     }
 
     private val dataViewModel: DataViewModel by activityViewModels {
@@ -158,6 +154,7 @@ class HomeFragment : Fragment() {
         }
     }
 
+    // Load initial data like random meals, categories, and cuisines
     private fun loadInitialData() {
         homeViewModel.getRandomCuisine({ randomCuisine ->
             selectedCuisine = randomCuisine
@@ -209,6 +206,7 @@ class HomeFragment : Fragment() {
         outState.putBoolean("isRefreshed", isRefreshed)
     }
 
+    // Initialize UI components and set up adapters for RecyclerViews
     private fun initializeUi(view: View) {
         recyclerViewCategories = view.findViewById(R.id.recyclerview_categories)
         recyclerViewCategoriesItems = view.findViewById(R.id.recyclerview_mealByCategories)
@@ -314,6 +312,7 @@ class HomeFragment : Fragment() {
         }
     }
 
+    // Check internet availability and load data accordingly
     private fun checkInternetAndLoadData() {
         if (NetworkUtils.isInternetAvailable(requireContext())) {
             noInternetImage.visibility = View.GONE
@@ -334,6 +333,7 @@ class HomeFragment : Fragment() {
         }
     }
 
+    // Show a dialog when there is no internet connection
     private fun showNoInternetDialog() {
         CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel(
             context = requireContext(),
@@ -347,6 +347,7 @@ class HomeFragment : Fragment() {
         )
     }
 
+    // Stop all shimmer effects when loading fails or is not needed
     private fun stopAllShimmers() {
         shimmerMealOfDay.stopShimmer()
         shimmerMealOfDay.visibility = View.GONE
@@ -360,6 +361,7 @@ class HomeFragment : Fragment() {
         shimmerCuisine.visibility = View.GONE
     }
 
+    // Refresh all data by resetting selections and reloading content
     private fun refreshAllData() {
         isDataLoaded = false
         isInitialLoad = true
@@ -409,6 +411,7 @@ class HomeFragment : Fragment() {
         swipeRefreshLayout.isRefreshing = false
     }
 
+    // Set up observers for ViewModel data like meals, categories, and cuisines
     private fun initObservers() {
         dataViewModel.isFavourite.observe(viewLifecycleOwner, Observer { isFavourite ->
             favouriteState = isFavourite
@@ -544,16 +547,19 @@ class HomeFragment : Fragment() {
         }
     }
 
+    // Configure RecyclerView with a horizontal LinearLayoutManager
     private fun setupRecyclerView(recyclerView: RecyclerView) {
         recyclerView.layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
     }
 
+    // Navigate to meal details screen with the given meal ID
     private fun goToDetails(id: String) {
         dataViewModel.setItemDetails(id)
         navController?.navigate(R.id.action_details, null, navOptions)
     }
 
+    // Navigate to search screen with the selected category
     private fun goToSearchCategories(name: String) {
         if (selectedCategory != name) {
             selectedCategory = name
@@ -564,6 +570,7 @@ class HomeFragment : Fragment() {
         }
     }
 
+    // Change the favorite state of a meal and handle guest restrictions
     private fun changeFavouriteState(
         recipeId: String,
         isChange: Boolean,
@@ -574,7 +581,6 @@ class HomeFragment : Fragment() {
             onComplete(false, true)
             return
         }
-
 
         val isCurrentlyFavourite = dataViewModel.meals.value?.any { it.idMeal == recipeId } == true
 
@@ -602,6 +608,7 @@ class HomeFragment : Fragment() {
         }
     }
 
+    // Set up the cuisines popup menu with available cuisines
     private fun setupCuisinesPopup() {
         homeViewModel.getAllCuisines(requireContext())
 
@@ -635,6 +642,7 @@ class HomeFragment : Fragment() {
         }
     }
 
+    // Update the free trial card with the meal of the day
     private fun updateFreeTrialCard(meal: Meal?) {
         meal?.let {
             val textViewMealName = cardViewFreeTrial.findViewById<TextView>(R.id.meal_name)
@@ -649,6 +657,7 @@ class HomeFragment : Fragment() {
         }
     }
 
+    // Show a dialog to select a day for adding a meal to the plan
     private fun showAddToPlanDialog(meal: Meal) {
         val days = arrayOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
         AlertDialog.Builder(requireContext())
@@ -662,6 +671,7 @@ class HomeFragment : Fragment() {
             .show()
     }
 
+    // Get the current list of categories from the adapter using reflection
     private fun AdapterRVCategories.getCurrentList(): List<Category> {
         return this.javaClass.getDeclaredField("categories").let { field ->
             field.isAccessible = true

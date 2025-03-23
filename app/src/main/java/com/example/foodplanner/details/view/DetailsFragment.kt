@@ -129,6 +129,7 @@ class DetailsFragment : Fragment() {
         initListeners()
     }
 
+    // Initialize UI components and set up YouTube player and RecyclerView
     private fun initViews() {
         youtubePlayerView = requireView().findViewById(R.id.youtubePlayer)
         fullScreenContainer = requireView().findViewById(R.id.fullScreenContainer)
@@ -162,6 +163,7 @@ class DetailsFragment : Fragment() {
         ingredientsRecycler.layoutManager = LinearLayoutManager(requireContext())
     }
 
+    // Set up click listeners for UI elements like back button, favorite, and share
     private fun initListeners() {
         backImage.setOnClickListener { navController.popBackStack() }
 
@@ -211,6 +213,7 @@ class DetailsFragment : Fragment() {
         }
     }
 
+    // Set up observers for meal details and favorite state
     private fun initObservers() {
         dataViewModel.itemDetails.observe(viewLifecycleOwner) { id ->
             recipeId = id
@@ -233,6 +236,7 @@ class DetailsFragment : Fragment() {
         }
     }
 
+    // Bind meal data to UI elements and activate YouTube player
     private fun bindData(recipe: Meal) {
         ingredientsAdapter.updateData(recipe.getIngredientsWithMeasurements())
         ingredientsRecycler.adapter = ingredientsAdapter
@@ -244,6 +248,7 @@ class DetailsFragment : Fragment() {
         activateYoutubePlayer(recipe.strYoutube)
     }
 
+    // Format meal instructions with numbered steps and styling
     private fun formatInstructions(instructions: String): SpannableStringBuilder {
         val steps = instructions.split("\r\n").filter { it.isNotBlank() }
         val formattedText = SpannableStringBuilder()
@@ -273,12 +278,14 @@ class DetailsFragment : Fragment() {
         return formattedText
     }
 
+    // Change the favorite state of the meal
     private fun changeFavouriteState(recipeId: String, isChange: Boolean) {
         dataViewModel.viewModelScope.launch {
             dataViewModel.changeFavouriteState(recipeId, isChange)
         }
     }
 
+    // Share the meal details via an intent
     private fun shareMeal() {
         currentMeal?.let { meal ->
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
@@ -292,6 +299,7 @@ class DetailsFragment : Fragment() {
         }
     }
 
+    // Show a dialog to select a day for adding the meal to the plan
     private fun showAddToPlanDialog(meal: Meal) {
         val days = arrayOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
         AlertDialog.Builder(requireContext())
@@ -305,6 +313,7 @@ class DetailsFragment : Fragment() {
             .show()
     }
 
+    // Show a dialog for guest restrictions with an option to log in
     private fun showGuestRestrictionDialog(message: String) {
         CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel(
             context = requireContext(),
@@ -318,6 +327,7 @@ class DetailsFragment : Fragment() {
         )
     }
 
+    // Activate the YouTube player with the given video URL
     private fun activateYoutubePlayer(url: String) {
         val youtubePlayerListener = object : AbstractYouTubePlayerListener() {
             override fun onReady(youTubePlayer: YouTubePlayer) {
@@ -365,6 +375,7 @@ class DetailsFragment : Fragment() {
         youtubePlayerView.initialize(youtubePlayerListener, iFramePlayerOptions)
     }
 
+    // Handle screen orientation changes to toggle fullscreen mode
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -378,6 +389,7 @@ class DetailsFragment : Fragment() {
         }
     }
 
+    // Clean up resources when the view is destroyed
     override fun onDestroyView() {
         super.onDestroyView()
         Glide.with(this).clear(mealImage)

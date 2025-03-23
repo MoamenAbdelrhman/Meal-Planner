@@ -5,15 +5,13 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
-import com.example.foodplanner.core.model.FavouriteMealDao
+import com.example.foodplanner.core.model.remote.source.FavouriteMealDao
 import com.example.foodplanner.core.model.FavouriteMealEntity
 import com.example.foodplanner.core.model.MealEntity
 import com.example.foodplanner.core.model.local.MyTypeConverters
 import com.example.foodplanner.core.model.local.User
-import com.example.foodplanner.meal_plan.model.MealPlanDao
-import com.example.foodplanner.meal_plan.model.MealPlanEntity
+import com.example.foodplanner.core.model.remote.source.MealPlanDao
+import com.example.foodplanner.core.model.MealPlanEntity
 
 @Database(entities = [User::class, MealEntity::class, MealPlanEntity::class, FavouriteMealEntity::class], version = 8, exportSchema = false)
 @TypeConverters(MyTypeConverters::class)

@@ -39,6 +39,7 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> get() = _isLoading
 
+    // Validate user inputs for signup (name, email, password, confirm password)
     fun validateInputs(name: String, email: String, password: String, confirmPassword: String): ValidationResult {
         var nameError: String? = null
         var emailError: String? = null
@@ -61,6 +62,7 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
         return ValidationResult(isValid, nameError, emailError, passwordError, confirmPasswordError)
     }
 
+    // Validate password based on specific criteria (length, numbers, letters, special characters)
     private fun validatePassword(password: String): String? {
         return when {
             password.isEmpty() -> "Password cannot be empty"
@@ -73,6 +75,7 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
         }
     }
 
+    // Validate that confirm password matches the password
     private fun validateConfirmPassword(password: String, confirmPassword: String): String? {
         return when {
             confirmPassword.isEmpty() -> "Confirmation cannot be empty"
@@ -81,6 +84,7 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
         }
     }
 
+    // Sign up a new user with email, password, and username using Firebase Auth
     fun signupUser(email: String, password: String, username: String) {
         _isLoading.value = true
         auth.fetchSignInMethodsForEmail(email)
@@ -122,6 +126,7 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
             }
     }
 
+    // Sign in a user using Google credentials and save their info
     fun signInWithGoogle(idToken: String) {
         _isLoading.value = true
         val credential = GoogleAuthProvider.getCredential(idToken, null)
@@ -132,7 +137,6 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
                     val firebaseUser = auth.currentUser
                     if (firebaseUser != null) {
                         Log.d("SignupViewModel", "Google sign-in successful for user: ${firebaseUser.email}, UID: ${firebaseUser.uid}")
-                        // تحقق مما إذا كان المستخدم جديدًا (تم إنشاؤه للتو)
                         if (task.result?.additionalUserInfo?.isNewUser == true) {
                             Log.d("SignupViewModel", "New user created in Firebase")
                         } else {
@@ -155,6 +159,7 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
             }
     }
 
+    // Save the user's information to the local Room database
     private fun saveUserToRoom(firebaseUser: FirebaseUser, username: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val existingUser = userRepository.getUserByEmail(firebaseUser.email!!)

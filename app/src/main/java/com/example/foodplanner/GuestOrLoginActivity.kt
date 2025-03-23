@@ -23,7 +23,7 @@ class GuestOrLoginActivity : AppCompatActivity() {
             }
             startActivity(intent)
             with(prefs.edit()) {
-                putBoolean("isFirstRun", false) // تحديث isFirstRun إلى false
+                putBoolean("isFirstRun", false)
                 apply()
             }
             finish()
@@ -36,7 +36,7 @@ class GuestOrLoginActivity : AppCompatActivity() {
             }
             startActivity(intent)
             with(prefs.edit()) {
-                putBoolean("isFirstRun", false) // تحديث isFirstRun إلى false
+                putBoolean("isFirstRun", false)
                 apply()
             }
             finish()

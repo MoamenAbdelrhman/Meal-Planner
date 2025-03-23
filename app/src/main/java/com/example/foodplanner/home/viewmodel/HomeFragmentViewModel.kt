@@ -29,6 +29,7 @@ class HomeFragmentViewModel(
     private var _dataCategories: MutableLiveData<Response<GsonDataCategories>> = MutableLiveData()
     val dataCategories: LiveData<Response<GsonDataCategories>> get() = _dataCategories
 
+    // Fetch meal categories from the repository
     fun getCategories(context: android.content.Context) {
         applyResponse(_dataCategories, context) {
             mealRepository.getCategories()
@@ -38,6 +39,7 @@ class HomeFragmentViewModel(
     private val _defaultMeals = MutableLiveData<Response<MutableList<Meal>>>()
     val defaultMeals: LiveData<Response<MutableList<Meal>>> get() = _defaultMeals
 
+    // Fetch a specified number of default meals asynchronously
     fun getDefaultMeals(much: Int, context: android.content.Context) {
         _defaultMeals.value = Response.Loading
 
@@ -72,6 +74,7 @@ class HomeFragmentViewModel(
     private var _filteredMealsByCategory: MutableLiveData<Response<GsonDataMeal>> = MutableLiveData()
     val filteredMealsByCategory: LiveData<Response<GsonDataMeal>> get() = _filteredMealsByCategory
 
+    // Fetch meals filtered by a specific category
     fun getFilteredMealsByCategory(category: String, context: android.content.Context) {
         applyResponse(_filteredMealsByCategory, context) {
             mealRepository.getCategoryMeals(category)
@@ -81,6 +84,7 @@ class HomeFragmentViewModel(
     private val _userCuisines: MutableLiveData<Response<List<String>?>> = MutableLiveData()
     val userCuisines: LiveData<Response<List<String>?>> get() = _userCuisines
 
+    // Fetch the logged-in user's preferred cuisines
     fun getUserCuisines(context: android.content.Context) {
         applyResponse(_userCuisines, context) {
             userRepository.getLoggedInUser()?.cuisines
@@ -90,6 +94,7 @@ class HomeFragmentViewModel(
     private var _filteredMealsByAreas: MutableLiveData<Response<GsonDataMeal>> = MutableLiveData()
     val filteredMealsByAreas: LiveData<Response<GsonDataMeal>> get() = _filteredMealsByAreas
 
+    // Fetch meals filtered by a specific area/cuisine
     fun getFilteredMealsByAreas(area: String, context: android.content.Context) {
         applyResponse(_filteredMealsByAreas, context) {
             mealRepository.getCuisinesMeals(area)
@@ -99,6 +104,7 @@ class HomeFragmentViewModel(
     private val _randomMeal = MutableLiveData<Response<Meal>>()
     val randomMeal: LiveData<Response<Meal>> get() = _randomMeal
 
+    // Fetch a random meal from the repository
     fun getRandomMeal(context: android.content.Context) {
         applyResponse(_randomMeal, context) {
             mealRepository.getRandomDataMeal().meals.first()
@@ -108,6 +114,7 @@ class HomeFragmentViewModel(
     private val _allCuisines = MutableLiveData<Response<List<String>>>()
     val allCuisines: LiveData<Response<List<String>>> get() = _allCuisines
 
+    // Fetch all available cuisines from the repository
     fun getAllCuisines(context: android.content.Context) = applyResponse(_allCuisines, context) {
         mealRepository.getAllCuisines()
     }
@@ -118,6 +125,7 @@ class HomeFragmentViewModel(
     private val _someRecommendedMeals = MutableLiveData<Response<MutableList<Meal>>>()
     val someRecommendedMeals: LiveData<Response<MutableList<Meal>>> get() = _someRecommendedMeals
 
+    // Fetch a specified number of random meals (for gold or recommended sections)
     fun getRandomMeals(much: Int, isGold: Boolean = false, context: android.content.Context) {
         val responseHandler = MutableLiveData<Response<MutableList<Meal>>>()
         responseHandler.observeForever { response ->
@@ -157,6 +165,7 @@ class HomeFragmentViewModel(
         }
     }
 
+    // Fetch a random category and pass it to the callback
     fun getRandomCategory(onResult: (String) -> Unit, context: android.content.Context) {
         viewModelScope.launch {
             if (NetworkUtils.isInternetAvailable(context)) {
@@ -169,11 +178,12 @@ class HomeFragmentViewModel(
                     onResult("Beef")
                 }
             } else {
-                onResult("Beef") // قيمة افتراضية عند انقطاع الإنترنت
+                onResult("Beef") // Default value when internet is unavailable
             }
         }
     }
 
+    // Fetch a random cuisine and pass it to the callback
     fun getRandomCuisine(onResult: (String) -> Unit, context: android.content.Context) {
         viewModelScope.launch {
             if (NetworkUtils.isInternetAvailable(context)) {
@@ -186,11 +196,12 @@ class HomeFragmentViewModel(
                     onResult("Egyptian")
                 }
             } else {
-                onResult("Egyptian") // قيمة افتراضية عند انقطاع الإنترنت
+                onResult("Egyptian") // Default value when internet is unavailable
             }
         }
     }
 
+    // Generic function to handle API responses with loading, success, and failure states
     private fun <T> applyResponse(
         liveData: MutableLiveData<Response<T>>,
         context: android.content.Context,

@@ -15,7 +15,7 @@
             android:id="@+id/favouriteTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="26dp"
+            android:layout_marginTop="18dp"
             android:text="Favourite Meals"
             android:textColor="@color/black"
             android:textSize="28sp"
@@ -24,14 +24,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <View
-            android:layout_width="270dp"
-            android:layout_height="3dp"
-            android:layout_marginTop="8dp"
-            android:background="@android:color/darker_gray"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/favouriteTV" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/favouriteRecycle"

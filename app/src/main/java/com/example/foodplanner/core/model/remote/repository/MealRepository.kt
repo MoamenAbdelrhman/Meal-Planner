@@ -5,7 +5,6 @@ import com.example.foodplanner.core.model.remote.GsonDataCategories
 import com.example.foodplanner.core.model.remote.GsonDataMeal
 import com.example.foodplanner.core.model.remote.IngredientResponse
 import com.example.foodplanner.core.model.remote.Meal
-import com.example.foodplanner.core.model.remote.source.GsonApi
 
 
 interface MealRepository {

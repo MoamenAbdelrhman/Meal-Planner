@@ -135,12 +135,14 @@ class MealsFragment : Fragment() {
         }
     }
 
+    // Navigate to meal details screen with the given meal ID
     private fun goToDetails(id: String) {
         dataViewModel.setItemDetails(id)
         val action = MealsFragmentDirections.actionMealsFragmentToDetails(id)
         findNavController().navigate(action)
     }
 
+    // Handle adding a meal to the plan with guest restrictions
     private fun handleAddToPlanClick(meal: Meal) {
         if (isGuest) {
             showGuestRestrictionDialog("Guests cannot add meals to the plan. Please log in.")
@@ -149,6 +151,7 @@ class MealsFragment : Fragment() {
         }
     }
 
+    // Show a dialog to select a day for adding a meal to the plan
     private fun showAddToPlanDialog(meal: Meal) {
         Log.d("MealsFragment", "Showing day selection dialog for meal: ${meal.strMeal}")
         val days = arrayOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
@@ -163,6 +166,7 @@ class MealsFragment : Fragment() {
             .show()
     }
 
+    // Show a dialog for guest restrictions with an option to log in
     private fun showGuestRestrictionDialog(message: String) {
         CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel(
             context = requireContext(),

@@ -16,7 +16,7 @@ import com.example.foodplanner.core.model.remote.Meal
 
 class MealsAdapter(
     private val onItemClick: (String) -> Unit,
-    private val onAddToPlanClick: (Meal) -> Unit, // دالة لنقل النقر إلى MealsFragment
+    private val onAddToPlanClick: (Meal) -> Unit,
     private val fragment: Fragment
 ) : ListAdapter<Meal, MealsAdapter.MealViewHolder>(MealDiffCallback()) {
 
@@ -32,7 +32,7 @@ class MealsAdapter(
         holder.itemView.setOnClickListener { onItemClick(meal.idMeal) }
         holder.ivMealImage.setOnClickListener { onItemClick(meal.idMeal) }
         holder.tvMealName.setOnClickListener { onItemClick(meal.idMeal) }
-        holder.btnAddToPlan.setOnClickListener { onAddToPlanClick(meal) } // تمرير النقر فقط
+        holder.btnAddToPlan.setOnClickListener { onAddToPlanClick(meal) }
     }
 
     class MealViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {

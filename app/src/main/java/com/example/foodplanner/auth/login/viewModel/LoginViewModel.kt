@@ -40,7 +40,7 @@ class LoginViewModel(
                     if (firebaseUser != null) {
                         saveUserToRoom(firebaseUser)
                     }
-                    _loginSuccess.value = true // إطلاق loginSuccess مرة واحدة فقط هنا
+                    _loginSuccess.value = true
                 } else {
                     handleLoginError(task.exception)
                 }
@@ -58,7 +58,7 @@ class LoginViewModel(
                     if (firebaseUser != null) {
                         saveUserToRoom(firebaseUser)
                     }
-                    _loginSuccess.value = true // إطلاق loginSuccess مرة واحدة فقط هنا
+                    _loginSuccess.value = true
                 } else {
                     _errorMessage.value = "Google sign-in failed"
                     Log.e("LoginViewModel", "Google sign-in failed: ${task.exception?.message}")
@@ -71,7 +71,7 @@ class LoginViewModel(
             val existingUser = userRepository.getUserByEmail(firebaseUser.email!!)
             if (existingUser == null) {
                 val newUser = User(
-                    id = "0", // Auto-increment
+                    id = "0",
                     firebaseId = firebaseUser.uid,
                     email = firebaseUser.email!!,
                     password = "",
@@ -79,7 +79,6 @@ class LoginViewModel(
                 )
                 userRepository.addUser(newUser)
             }
-            // لا نستخدم postValue هنا لأن loginSuccess يتم إطلاقه بالفعل في الخيط الرئيسي
         }
     }
 

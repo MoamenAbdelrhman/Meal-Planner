@@ -2,6 +2,9 @@ package com.example.foodplanner.core.util
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
+import android.view.WindowManager
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.example.foodplanner.R
 import com.example.foodplanner.auth.AuthActivity
@@ -51,37 +54,17 @@ object CreateMaterialAlertDialogBuilder {
             .show()
     }
 
-    fun createFailureResponse(response: Response.Failure, context: Context, action: (() -> Unit)? = null) {
-        when (val failureReason = response.reason) {
-            is FailureReason.NoInternet -> {
-                createMaterialAlertDialogBuilderOkCancel(
-                    context,
-                    title = "No Internet Connection",
-                    message = "Please check your internet connection and try again.",
-                    positiveBtnMsg = "Try again",
-                    negativeBtnMsg = "Cancel"
-                ) {
-                    action?.invoke()
-                }
-            }
-
-            is FailureReason.UnknownError -> {
-                val errorMessage = failureReason.error
-                createMaterialAlertDialogBuilderOk(
-                    context,
-                    title = "Unknown Error",
-                    message = "An unknown error occurred: $errorMessage",
-                    positiveBtnMsg = "Try again"
-                ) {
-                    action?.invoke()
-                }
-            }
-        }
-    }
-
     fun createGuestLoginDialog(context: Context) {
+
+        val messageTextView = TextView(context).apply {
+            text = "You need to log in to access this feature."
+            textSize = 16f
+            setTextColor(ContextCompat.getColor(context, android.R.color.black))
+            setPadding(36,36,36,36)
+        }
+
         val dialog = MaterialAlertDialogBuilder(context)
-            .setMessage("You need to log in to access this feature.")
+            .setView(messageTextView)
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Login", null)
             .setCancelable(true)
@@ -89,18 +72,21 @@ object CreateMaterialAlertDialogBuilder {
 
         dialog.show()
 
+        dialog.window?.setBackgroundDrawable(ContextCompat.getDrawable(context, R.drawable.dialog_background))
+        val widthInDp = 300
+        val scale = context.resources.displayMetrics.density
+        val widthInPixels = (widthInDp * scale + 0.5f).toInt()
+        dialog.window?.setLayout(widthInPixels, WindowManager.LayoutParams.WRAP_CONTENT)
+
         dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)?.let { positiveButton ->
             positiveButton.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.mycolor))
             positiveButton.setTextColor(ContextCompat.getColor(context, android.R.color.white))
             positiveButton.setPadding(32, 16, 32, 16)
+            positiveButton.textSize = 16f
             positiveButton.setOnClickListener {
-                val intent = Intent(context, AuthActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                }
+                val intent = Intent(context, AuthActivity::class.java)
                 context.startActivity(intent)
-                if (context is MainActivity) {
-                    context.finish()
-                }
+                dialog.dismiss()
             }
         }
 
@@ -109,11 +95,14 @@ object CreateMaterialAlertDialogBuilder {
             negativeButton.setTextColor(ContextCompat.getColor(context, R.color.black))
             negativeButton.setBackgroundResource(R.drawable.outlined_button_background)
             negativeButton.setPadding(32, 16, 32, 16)
+            negativeButton.textSize = 14f
             negativeButton.setOnClickListener {
                 dialog.dismiss()
             }
         }
     }
+
+
 
     fun createConfirmRemovalDialog(
         context: Context,
@@ -131,10 +120,18 @@ object CreateMaterialAlertDialogBuilder {
 
         dialog.show()
 
+        dialog.window?.setBackgroundDrawable(ContextCompat.getDrawable(context, R.drawable.dialog_background))
+        val widthInDp = 300
+        val scale = context.resources.displayMetrics.density
+        val widthInPixels = (widthInDp * scale + 0.5f).toInt()
+        dialog.window?.setLayout(widthInPixels, WindowManager.LayoutParams.WRAP_CONTENT)
+
         dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)?.let { positiveButton ->
-            positiveButton.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.mycolor))
-            positiveButton.setTextColor(ContextCompat.getColor(context, android.R.color.white))
+            positiveButton.setBackgroundTintList(ContextCompat.getColorStateList(context, android.R.color.transparent))
+            positiveButton.setTextColor(ContextCompat.getColor(context, R.color.mycolor))
+            positiveButton.setBackgroundResource(R.drawable.outlined_button_background)
             positiveButton.setPadding(32, 16, 32, 16)
+            positiveButton.textSize = 14f
             positiveButton.setOnClickListener {
                 positiveAction()
                 dialog.dismiss()
@@ -142,10 +139,10 @@ object CreateMaterialAlertDialogBuilder {
         }
 
         dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)?.let { negativeButton ->
-            negativeButton.setBackgroundTintList(ContextCompat.getColorStateList(context, android.R.color.transparent))
-            negativeButton.setTextColor(ContextCompat.getColor(context, R.color.black))
-            negativeButton.setBackgroundResource(R.drawable.outlined_button_background)
+            negativeButton.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.mycolor))
+            negativeButton.setTextColor(ContextCompat.getColor(context, R.color.white))
             negativeButton.setPadding(32, 16, 32, 16)
+            negativeButton.textSize=14f
             negativeButton.setOnClickListener {
                 negativeAction()
                 dialog.dismiss()

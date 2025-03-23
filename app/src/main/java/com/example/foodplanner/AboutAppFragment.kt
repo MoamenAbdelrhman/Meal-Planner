@@ -5,7 +5,6 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.example.foodplanner.R
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class AboutAppFragment : Fragment() {

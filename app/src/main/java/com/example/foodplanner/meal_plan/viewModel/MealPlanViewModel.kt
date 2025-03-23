@@ -10,9 +10,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.foodplanner.core.model.local.repository.UserRepository
 import com.example.foodplanner.core.model.local.source.UserDatabase
 import com.example.foodplanner.core.model.remote.Meal
-import com.example.foodplanner.meal_plan.model.MealPlanDao
-import com.example.foodplanner.meal_plan.model.toDayMealPlans
-import com.example.foodplanner.meal_plan.model.toMealPlanEntity
+import com.example.foodplanner.core.model.remote.source.MealPlanDao
+import com.example.foodplanner.core.model.toDayMealPlans
+import com.example.foodplanner.core.model.toMealPlanEntity
 import com.example.foodplanner.meal_plan.view.DayMealPlan
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot

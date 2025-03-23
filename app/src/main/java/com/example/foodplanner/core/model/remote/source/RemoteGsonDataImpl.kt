@@ -1,6 +1,5 @@
 package com.example.foodplanner.core.model.remote.source
 
-import com.example.foodplanner.core.model.remote.GsonDataMeal
 import com.example.foodplanner.core.model.remote.IngredientResponse
 import com.example.foodplanner.core.model.remote.Meal
 

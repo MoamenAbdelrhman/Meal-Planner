@@ -79,6 +79,7 @@ class MealPlanFragment : Fragment() {
         }
     }
 
+    // Initialize UI components and set up the RecyclerView adapter
     private fun initializeUi(view: View) {
         rvMealPlan = view.findViewById(R.id.rvMealPlan)
         mealPlanAdapter = MealPlanAdapter(
@@ -101,6 +102,7 @@ class MealPlanFragment : Fragment() {
         rvMealPlan.adapter = mealPlanAdapter
     }
 
+    // Set up observers for the weekly meal plan data
     private fun initObservers() {
         mealPlanViewModel.weeklyMealPlan.observe(viewLifecycleOwner) { mealPlan ->
             mealPlan?.let {
@@ -112,6 +114,7 @@ class MealPlanFragment : Fragment() {
         }
     }
 
+    // Navigate to meal details screen with the given meal ID
     private fun goToDetails(id: String) {
         Log.d(TAG, "goToDetails called with id: $id")
         if (NetworkUtils.isInternetAvailable(requireContext())) {
