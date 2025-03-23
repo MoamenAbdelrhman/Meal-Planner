@@ -34,7 +34,7 @@
                 android:layout_marginTop="5dp"
                 android:layout_marginEnd="5dp"
                 android:layout_gravity="end"
-                app:tint="@color/mycolor"
+                app:tint="@color/white"
                 android:src="@android:drawable/ic_menu_close_clear_cancel"
                 app:layout_constraintEnd_toEndOf="@id/ivMealImage"
                 app:layout_constraintTop_toTopOf="@id/ivMealImage" />

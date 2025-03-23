@@ -9,11 +9,15 @@ import com.example.foodplanner.R
 import android.widget.TextView
 import com.example.foodplanner.meal_plan.view.DayMealPlan
 import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModel
+import android.widget.Toast
+import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder
 
 class MealPlanAdapter(
     private var mealPlan: List<DayMealPlan>,
     private val mealPlanViewModel: MealPlanViewModel,
-    private val goToDetails: (String) -> Unit
+    private val goToDetails: (String) -> Unit,
+    private val isGuest: Boolean = false,
+    private val onAddMeal: (String, String) -> Unit
 ) : RecyclerView.Adapter<MealPlanAdapter.DayViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DayViewHolder {
@@ -44,8 +48,24 @@ class MealPlanAdapter(
             dayMealAdapter = DayMealAdapter(
                 listOf(),
                 onDeleteClick = { meal ->
-                    val day = mealPlan[adapterPosition]
-                    mealPlanViewModel.deleteMealFromPlan(day.dayName, meal)
+                    if (isGuest) {
+                        Toast.makeText(
+                            itemView.context,
+                            "Guests cannot modify meal plans. Please log in.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        val day = mealPlan[adapterPosition]
+                        CreateMaterialAlertDialogBuilder.createConfirmRemovalDialog(
+                            context = itemView.context,
+                            message = "Are you sure you want to remove this meal from your plan?",
+                            positiveAction = {
+                                mealPlanViewModel.deleteMealFromPlan(day.dayName, meal)
+                            },
+                            negativeAction = {
+                            }
+                        )
+                    }
                 },
                 goToDetails = goToDetails
             )

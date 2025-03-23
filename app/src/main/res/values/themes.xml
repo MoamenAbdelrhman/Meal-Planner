@@ -29,4 +29,24 @@
     <style name="entrydata">
         <item name="android:background">@drawable/entrydata</item>
     </style>
+
+    <style name="DialogButtonOutlinedGreen">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:textColor">@color/mycolor</item>
+        <item name="strokeColor">@color/mycolor</item>
+        <item name="strokeWidth">2dp</item>
+        <item name="android:padding">8dp</item>
+    </style>
+
+
+    <style name="DialogButtonFilledGreen">
+        <item name="android:backgroundTint">@color/mycolor</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:padding">8dp</item>
+    </style>
+
+    <style name="DialogButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+    </style>
 </resources>

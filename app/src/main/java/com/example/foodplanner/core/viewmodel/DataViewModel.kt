@@ -50,6 +50,9 @@ class DataViewModel(
     private val _isFavourite = MutableLiveData<Boolean>()
     val isFavourite: LiveData<Boolean> get() = _isFavourite
 
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> get() = _isLoading
+
     private val _categorySearch = MutableLiveData<String?>()
     val categorySearch: LiveData<String?> get() = _categorySearch
 
@@ -68,6 +71,7 @@ class DataViewModel(
     init {
         _categorySearch.value = null
         _mainCuisine.value = null
+        _isLoading.value = false
         loadCurrentUser()
     }
 
@@ -85,8 +89,9 @@ class DataViewModel(
         }
     }
 
-    // بدء المزامنة مع Firebase
     fun startFavoritesSync(userId: String) {
+        if (favoritesListener != null) return
+        _isLoading.value = true
         currentUserId = userId
         val favoritesRef = FirebaseDatabase.getInstance().getReference("/users/$userId/favorites")
         favoritesListener = object : ChildEventListener {
@@ -113,13 +118,17 @@ class DataViewModel(
             override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onCancelled(error: DatabaseError) {
-                Log.e("DataViewModel", "فشل في مزامنة الوجبات المفضلة", error.toException())
+                Log.e("DataViewModel", "Failed to sync favorites", error.toException())
+                _isLoading.value = false
             }
         }
         favoritesRef.addChildEventListener(favoritesListener!!)
+        viewModelScope.launch {
+            loadFavoriteItems()
+            _isLoading.value = false
+        }
     }
 
-    // إيقاف المزامنة
     fun stopFavoritesSync() {
         currentUserId?.let { uid ->
             val favoritesRef = FirebaseDatabase.getInstance().getReference("/users/$uid/favorites")
@@ -132,13 +141,15 @@ class DataViewModel(
         viewModelScope.launch {
             currentUserId?.let { userId ->
                 val favouriteMeals = favouriteMealDao.getAllFavouriteMeals(userId)
-                Log.d("DataViewModel", "Loaded favourite meals for user $userId: $favouriteMeals")
                 val mealIds = favouriteMeals.map { it.idMeal }.toMutableSet()
-                _favouritesList.value = mealIds
-                getMeals()
+                if (_favouritesList.value != mealIds) {
+                    _favouritesList.value = mealIds
+                    getMeals()
+                }
             }
         }
     }
+
 
     private fun getMeals() {
         viewModelScope.launch {
@@ -157,14 +168,12 @@ class DataViewModel(
             var currentFavouriteState = currentFavourites.contains(recipeId)
             if (isChange) {
                 if (currentFavouriteState) {
-                    // حذف من Firebase و Room
                     FirebaseDatabase.getInstance().getReference("/users/$userId/favorites/$recipeId").removeValue()
                     favouriteMealDao.deleteFavouriteMeal(recipeId, userId)
                     Log.d("DataViewModel", "Deleted meal $recipeId from favourites for user $userId")
                     currentFavourites.remove(recipeId)
                     currentFavouriteState = false
                 } else {
-                    // إضافة إلى Firebase و Room
                     val meal = mealRepository.getMealById(recipeId)
                     FirebaseDatabase.getInstance().getReference("/users/$userId/favorites/$recipeId").setValue(meal)
                     val favouriteMeal = meal.toFavouriteMealEntity(userId)
@@ -178,6 +187,10 @@ class DataViewModel(
             }
             _isFavourite.value = currentFavouriteState
         }
+    }
+
+    suspend fun getMealById(mealId: String): Meal? {
+        return mealRepository.getMealById(mealId)
     }
 
     fun updateSearchCategory(category: String?) {

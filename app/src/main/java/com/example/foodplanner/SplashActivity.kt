@@ -1,6 +1,7 @@
 package com.example.foodplanner
 
 import android.animation.ValueAnimator
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -58,23 +59,30 @@ class SplashActivity : AppCompatActivity() {
         animator.startDelay = 1000
         animator.start()
 
-        val userRepository = UserRepositoryImpl(
-            LocalDataSourceImpl(UserDatabase.getDatabaseInstance(this).userDao()),
-            FirebaseAuth.getInstance()
-        )
-        val authViewModelFactory = AuthViewModelFactory(userRepository)
-        authViewModel = ViewModelProvider(this, authViewModelFactory)[AuthViewModel::class.java]
+        authViewModel = ViewModelProvider(
+            this,
+            AuthViewModelFactory(
+                UserRepositoryImpl(
+                    LocalDataSourceImpl(UserDatabase.getDatabaseInstance(this).userDao()),
+                    FirebaseAuth.getInstance()
+                )
+            )
+        )[AuthViewModel::class.java]
 
-        authViewModel.checkUserLoggedIn()
+        val sharedPreferences = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        val isFirstRun = sharedPreferences.getBoolean("isFirstRun", true)
+
         authViewModel.user.observe(this) { user ->
             Handler(Looper.getMainLooper()).postDelayed({
-                if (user != null) {
-                    val intent = Intent(this, MainActivity::class.java)
-                    startActivity(intent)
+                val intent = if (isFirstRun) {
+                    Intent(this, GuestOrLoginActivity::class.java)
                 } else {
-                    val intent = Intent(this, AuthActivity::class.java)
-                    startActivity(intent)
+                    Intent(this, MainActivity::class.java).apply {
+                        putExtra("IS_GUEST", user == null)
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    }
                 }
+                startActivity(intent)
                 finish()
             }, 2600)
         }

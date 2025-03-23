@@ -1,6 +1,7 @@
 package com.example.foodplanner.home.view
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -26,6 +27,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
 import com.example.foodplanner.R
+import com.example.foodplanner.auth.AuthActivity
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase
@@ -113,13 +115,14 @@ class HomeFragment : Fragment() {
 
     private var favouriteState = false
     private var isCategoriesLoaded = false
-    private var selectedCategory: String? = null // To store the selected category for recyclerview_categories
+    private var selectedCategory: String? = null
     private var selectedCuisine: String? = null
     private var isDataLoaded = false
     private var mealOfTheDay: Meal? = null
     private var isInitialLoad = true
     private var hasShownInitialNoInternetDialog = false
-    private var isRefreshed = false // To track the refresh state
+    private var isRefreshed = false
+    private var isGuest: Boolean = false
 
     private val navOptions = NavOptions.Builder()
         .setEnterAnim(R.anim.slide_in_right)
@@ -136,6 +139,7 @@ class HomeFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        isGuest = requireActivity().intent.getBooleanExtra("IS_GUEST", false)
         if (savedInstanceState == null) {
             if (NetworkUtils.isInternetAvailable(requireContext())) {
                 loadInitialData()
@@ -145,9 +149,7 @@ class HomeFragment : Fragment() {
                 hasShownInitialNoInternetDialog = false
             }
         } else {
-            // Restore the state
             isRefreshed = savedInstanceState.getBoolean("isRefreshed", false)
-            // Restore selectedCategory only if no refresh was performed
             selectedCategory = if (!isRefreshed) savedInstanceState.getString("selectedCategory", null) else null
             selectedCuisine = savedInstanceState.getString("selectedCuisine", null)
             isInitialLoad = false
@@ -156,14 +158,12 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // Loads initial data for the fragment without setting a selected category
     private fun loadInitialData() {
         homeViewModel.getRandomCuisine({ randomCuisine ->
             selectedCuisine = randomCuisine
             homeViewModel.getFilteredMealsByAreas(randomCuisine, requireContext())
         }, requireContext())
 
-        // Load meals based on a random category, but do not set selectedCategory
         homeViewModel.getRandomCategory({ randomCategory ->
             homeViewModel.getFilteredMealsByCategory(randomCategory, requireContext())
         }, requireContext())
@@ -193,20 +193,22 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        searchBarHome.setOnClickListener {
+            findNavController().navigate(R.id.action_home_to_search)
+        }
         initObservers()
         checkInternetAndLoadData()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putString("selectedCategory", selectedCategory) // Save the selected category
+        outState.putString("selectedCategory", selectedCategory)
         selectedCuisine?.let { outState.putString("selectedCuisine", it) }
         outState.putBoolean("hasShownInitialNoInternetDialog", hasShownInitialNoInternetDialog)
         outState.putBoolean("isDataLoaded", isDataLoaded)
-        outState.putBoolean("isRefreshed", isRefreshed) // Save the refresh state
+        outState.putBoolean("isRefreshed", isRefreshed)
     }
 
-    // Initializes the UI components and sets up the RecyclerViews, adapters, and click listeners
     private fun initializeUi(view: View) {
         recyclerViewCategories = view.findViewById(R.id.recyclerview_categories)
         recyclerViewCategoriesItems = view.findViewById(R.id.recyclerview_mealByCategories)
@@ -227,32 +229,53 @@ class HomeFragment : Fragment() {
         textViewCuisines = view.findViewById(R.id.textViewCuisines)
 
         btnAddToPlan.setOnClickListener {
-            mealOfTheDay?.let { meal ->
-                showAddToPlanDialog(meal)
-            } ?: run {
-                Toast.makeText(requireContext(), "No meal available to add", Toast.LENGTH_SHORT).show()
+            if (isGuest) {
+                CreateMaterialAlertDialogBuilder.createGuestLoginDialog(requireContext())
+            } else {
+                mealOfTheDay?.let { meal ->
+                    showAddToPlanDialog(meal)
+                } ?: run {
+                    Toast.makeText(requireContext(), "No meal available to add", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 
-        // Pass selectedCategory to AdapterRVCategories during initialization
         categoriesAdapter = AdapterRVCategories(listOf(), selectedCategory) { name -> goToSearchCategories(name) }
         categoriesItemAdapter = AdapterRVItemMeal(
             listOf(),
             { id -> goToDetails(id) },
             { id, isChange, onComplete -> changeFavouriteState(id, isChange, onComplete) },
-            { meal -> showAddToPlanDialog(meal) }
+            { meal ->
+                if (isGuest) {
+                    CreateMaterialAlertDialogBuilder.createGuestLoginDialog(requireContext())
+                } else {
+                    showAddToPlanDialog(meal)
+                }
+            }
         )
         recommendationsAdapter = AdapterRVItemMeal(
             listOf(),
             { id -> goToDetails(id) },
             { id, isChange, onComplete -> changeFavouriteState(id, isChange, onComplete) },
-            { meal -> showAddToPlanDialog(meal) }
+            { meal ->
+                if (isGuest) {
+                    CreateMaterialAlertDialogBuilder.createGuestLoginDialog(requireContext())
+                } else {
+                    showAddToPlanDialog(meal)
+                }
+            }
         )
         cuisineAdapter = AdapterRVItemMeal(
             listOf(),
             { id -> goToDetails(id) },
             { id, isChange, onComplete -> changeFavouriteState(id, isChange, onComplete) },
-            { meal -> showAddToPlanDialog(meal) }
+            { meal ->
+                if (isGuest) {
+                    CreateMaterialAlertDialogBuilder.createGuestLoginDialog(requireContext())
+                } else {
+                    showAddToPlanDialog(meal)
+                }
+            }
         )
         recyclerViewCategories.adapter = categoriesAdapter
         recyclerViewCategoriesItems.adapter = categoriesItemAdapter
@@ -291,7 +314,6 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // Checks internet availability and loads data if available, otherwise shows a no-internet dialog
     private fun checkInternetAndLoadData() {
         if (NetworkUtils.isInternetAvailable(requireContext())) {
             noInternetImage.visibility = View.GONE
@@ -312,7 +334,6 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // Displays a dialog to inform the user of no internet connection with retry and cancel options
     private fun showNoInternetDialog() {
         CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel(
             context = requireContext(),
@@ -326,7 +347,6 @@ class HomeFragment : Fragment() {
         )
     }
 
-    // Stops all shimmer effects and hides them
     private fun stopAllShimmers() {
         shimmerMealOfDay.stopShimmer()
         shimmerMealOfDay.visibility = View.GONE
@@ -340,7 +360,6 @@ class HomeFragment : Fragment() {
         shimmerCuisine.visibility = View.GONE
     }
 
-    // Refreshes all data in the fragment, resetting selections and reloading content
     private fun refreshAllData() {
         isDataLoaded = false
         isInitialLoad = true
@@ -348,7 +367,6 @@ class HomeFragment : Fragment() {
         selectedCuisine = null
         isRefreshed = true
 
-        // Reset categorySearch in dataViewModel to avoid using an old value
         dataViewModel.updateSearchCategory(null)
 
         categoriesAdapter.resetSelection()
@@ -379,7 +397,6 @@ class HomeFragment : Fragment() {
         homeViewModel.getRandomMeals(10, context = requireContext())
         homeViewModel.getCategories(requireContext())
 
-        // Load meals based on a random category, but do not set selectedCategory
         homeViewModel.getRandomCategory({ randomCategory ->
             homeViewModel.getFilteredMealsByCategory(randomCategory, requireContext())
         }, requireContext())
@@ -392,19 +409,13 @@ class HomeFragment : Fragment() {
         swipeRefreshLayout.isRefreshing = false
     }
 
-
-    // Sets up observers for LiveData objects to update the UI based on data changes
     private fun initObservers() {
-
-        // Observes the favorite state of a meal and updates the local favouriteState variable
         dataViewModel.isFavourite.observe(viewLifecycleOwner, Observer { isFavourite ->
             favouriteState = isFavourite
         })
 
-        // Observes the selected category for search and updates the UI if it's the initial load and no refresh has occurred
         dataViewModel.categorySearch.observe(viewLifecycleOwner) { category ->
             category?.let {
-                // Update selectedCategory only if no refresh was performed and this is the initial load
                 if (isInitialLoad && !isRefreshed) {
                     selectedCategory = it
                     homeViewModel.getFilteredMealsByCategory(it, requireContext())
@@ -414,7 +425,6 @@ class HomeFragment : Fragment() {
         }
 
         with(dataViewModel) {
-            // Observes the list of cuisines and populates the popup menu with the available cuisines
             cuisinesData.observe(viewLifecycleOwner) { data ->
                 data?.forEachIndexed { index, item ->
                     popup.menu.add(0, index, 0, item)
@@ -423,7 +433,6 @@ class HomeFragment : Fragment() {
         }
 
         with(homeViewModel) {
-            // Observes the random meal of the day and updates the free trial card with the meal details
             randomMeal.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
@@ -450,7 +459,6 @@ class HomeFragment : Fragment() {
                 }
             }
 
-            // Observes the list of categories and updates the categories RecyclerView with the fetched data
             dataCategories.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
@@ -470,7 +478,6 @@ class HomeFragment : Fragment() {
                 }
             }
 
-            // Observes meals filtered by category and updates the meals RecyclerView for the selected category
             filteredMealsByCategory.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
@@ -486,15 +493,13 @@ class HomeFragment : Fragment() {
                         }
                     }
                     is Response.Failure -> {
-                        // Load meals based on a random category, but do not set selectedCategory
-                        homeViewModel.getRandomCategory( { randomCategory ->
+                        homeViewModel.getRandomCategory({ randomCategory ->
                             homeViewModel.getFilteredMealsByCategory(randomCategory, requireContext())
                         }, requireContext())
                     }
                 }
             }
 
-            // Observes recommended meals and updates the recommendations RecyclerView with the fetched meals
             someRecommendedMeals.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
@@ -513,7 +518,6 @@ class HomeFragment : Fragment() {
                 }
             }
 
-            // Observes meals filtered by area (cuisine) and updates the cuisine RecyclerView with the fetched meals
             filteredMealsByAreas.observe(viewLifecycleOwner) { response ->
                 when (response) {
                     is Response.Loading -> {
@@ -530,54 +534,74 @@ class HomeFragment : Fragment() {
                         }
                     }
                     is Response.Failure -> {
-                        homeViewModel.getRandomCuisine( { randomCuisine ->
+                        homeViewModel.getRandomCuisine({ randomCuisine ->
                             selectedCuisine = randomCuisine
                             getFilteredMealsByAreas(randomCuisine, requireContext())
-                        },requireContext())
+                        }, requireContext())
                     }
                 }
             }
         }
     }
 
-    // Configures a RecyclerView with a horizontal LinearLayoutManager
     private fun setupRecyclerView(recyclerView: RecyclerView) {
         recyclerView.layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
     }
 
-    // Navigates to the details screen for a specific meal
     private fun goToDetails(id: String) {
         dataViewModel.setItemDetails(id)
         navController?.navigate(R.id.action_details, null, navOptions)
     }
 
-    // Handles category selection, updates the selected category, and refreshes the meals list
     private fun goToSearchCategories(name: String) {
         if (selectedCategory != name) {
             selectedCategory = name
             dataViewModel.updateSearchCategory(name)
             homeViewModel.getFilteredMealsByCategory(name, requireContext())
-            // Update the Adapter with the newly selected category
             categoriesAdapter.submitList(categoriesAdapter.getCurrentList(), selectedCategory)
             isRefreshed = false
         }
     }
 
-    // Changes the favorite state of a meal and notifies the caller of the result
     private fun changeFavouriteState(
         recipeId: String,
         isChange: Boolean,
-        onComplete: (Boolean) -> Unit
+        onComplete: (Boolean, Boolean) -> Unit
     ) {
-        dataViewModel.viewModelScope.launch {
-            dataViewModel.changeFavouriteState(recipeId, isChange)
-        }.invokeOnCompletion {
-            onComplete(favouriteState)
+        if (isGuest && isChange) {
+            CreateMaterialAlertDialogBuilder.createGuestLoginDialog(requireContext())
+            onComplete(false, true)
+            return
+        }
+
+
+        val isCurrentlyFavourite = dataViewModel.meals.value?.any { it.idMeal == recipeId } == true
+
+        if (isChange && isCurrentlyFavourite) {
+            CreateMaterialAlertDialogBuilder.createConfirmRemovalDialog(
+                context = requireContext(),
+                message = "Are you sure you want to remove this meal from your favorites?",
+                positiveAction = {
+                    dataViewModel.viewModelScope.launch {
+                        dataViewModel.changeFavouriteState(recipeId, true)
+                    }.invokeOnCompletion {
+                        onComplete(dataViewModel.isFavourite.value ?: false, false)
+                    }
+                },
+                negativeAction = {
+                    onComplete(dataViewModel.isFavourite.value ?: true, true)
+                }
+            )
+        } else {
+            dataViewModel.viewModelScope.launch {
+                dataViewModel.changeFavouriteState(recipeId, isChange)
+            }.invokeOnCompletion {
+                onComplete(dataViewModel.isFavourite.value ?: false, false)
+            }
         }
     }
 
-    // Sets up the popup menu for cuisines and handles cuisine selection
     private fun setupCuisinesPopup() {
         homeViewModel.getAllCuisines(requireContext())
 
@@ -594,8 +618,7 @@ class HomeFragment : Fragment() {
                         }
                     }
                 }
-                is Response.Failure -> {
-                }
+                is Response.Failure -> {}
             }
         }
 
@@ -612,7 +635,6 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // Updates the free trial card with the meal of the day
     private fun updateFreeTrialCard(meal: Meal?) {
         meal?.let {
             val textViewMealName = cardViewFreeTrial.findViewById<TextView>(R.id.meal_name)
@@ -627,7 +649,6 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // Shows a dialog to add a meal to a specific day in the meal plan
     private fun showAddToPlanDialog(meal: Meal) {
         val days = arrayOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
         AlertDialog.Builder(requireContext())
@@ -641,7 +662,6 @@ class HomeFragment : Fragment() {
             .show()
     }
 
-    // Helper function to get the current list from categoriesAdapter
     private fun AdapterRVCategories.getCurrentList(): List<Category> {
         return this.javaClass.getDeclaredField("categories").let { field ->
             field.isAccessible = true

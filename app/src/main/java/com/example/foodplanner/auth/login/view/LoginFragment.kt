@@ -17,6 +17,8 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavOptions
+import androidx.navigation.fragment.findNavController
 import com.example.foodplanner.main.view.MainActivity
 import com.example.foodplanner.R
 import com.example.foodplanner.auth.AuthActivity
@@ -101,12 +103,8 @@ class LoginFragment : Fragment() {
         loginButton.setOnClickListener {
             val email = emailEditText.text.toString().trim()
             val password = passwordEditText.text.toString().trim()
-            if (isInternetAvailable(requireContext())) {
-                if (validateInputs(email, password)) {
-                    viewModel.loginUser(email, password)
-                }
-            } else {
-                showToast("No internet connection")
+            if (isInternetAvailable(requireContext()) && validateInputs(email, password)) {
+                viewModel.loginUser(email, password)
             }
         }
 
@@ -115,11 +113,11 @@ class LoginFragment : Fragment() {
         }
 
         signupButton.setOnClickListener {
-            (activity as AuthActivity).navigateToSignup()
+            findNavController().navigate(R.id.action_loginFragment_to_signupFragment)
         }
 
         forgetPasswordButton.setOnClickListener {
-            (activity as AuthActivity).navigateToForgetPassword()
+            findNavController().navigate(R.id.action_loginFragment_to_forgotPasswordFragment)
         }
     }
 
@@ -174,9 +172,11 @@ class LoginFragment : Fragment() {
     private fun observeViewModel() {
         viewModel.loginSuccess.observe(viewLifecycleOwner) { success ->
             if (success) {
+                Log.d("LoginFragment", "Login successful, navigating to MainActivity")
                 viewModel.loginSuccess.removeObservers(viewLifecycleOwner)
-                startActivity(Intent(requireContext(), MainActivity::class.java))
+                findNavController().navigate(R.id.action_loginFragment_to_mainActivity)
                 requireActivity().finish()
+                Log.d("LoginFragment", "AuthActivity finished")
             }
         }
 
@@ -209,7 +209,6 @@ class LoginFragment : Fragment() {
                     if (signInMethods != null && signInMethods.contains(GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD)) {
                         errorTextView.text = "This account is linked to Google. Please use Google Sign-In."
                     } else if (signInMethods.isNullOrEmpty()) {
-                        // إذا كانت القائمة فارغة، حاول التحقق من وجود UID في Room
                         checkLocalUser(email)
                     } else {
                         errorTextView.text = "Invalid email or password. Please try again."

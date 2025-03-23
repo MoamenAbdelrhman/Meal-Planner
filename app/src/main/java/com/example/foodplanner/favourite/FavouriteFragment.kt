@@ -1,7 +1,6 @@
 package com.example.foodplanner.favourite.view
 
 import FavouriteRecyclerAdapter
-import android.icu.lang.UCharacter.GraphemeClusterBreak.L
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -13,7 +12,6 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -23,11 +21,11 @@ import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase
 import com.example.foodplanner.core.model.remote.repository.MealRepositoryImpl
 import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
+import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder
 import com.example.foodplanner.core.viewmodel.DataViewModel
 import com.example.foodplanner.core.viewmodel.DataViewModelFactory
 import com.example.foodplanner.utils.NetworkUtils
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
@@ -49,11 +47,13 @@ class FavouriteFragment : Fragment() {
     private lateinit var adapter: FavouriteRecyclerAdapter
     private var favouriteState = false
     private var navController: NavController? = null
+    private var isGuest: Boolean = false
 
-    private val navOptions = NavOptions.Builder()
-        .setEnterAnim(R.anim.slide_in_right)
-        .setPopExitAnim(R.anim.slide_out_right)
-        .build()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        isGuest = requireActivity().intent.getBooleanExtra("IS_GUEST", false)
+    }
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -64,9 +64,8 @@ class FavouriteFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initObservers()
-        favouriteRecycle = view.findViewById(R.id.favouriteRecycle)
 
+        favouriteRecycle = view.findViewById(R.id.favouriteRecycle)
         adapter = FavouriteRecyclerAdapter({ id, isChange, onComplete ->
             changeFavouriteState(id, isChange, onComplete)
         }, { id -> goToDetails(id) })
@@ -74,14 +73,24 @@ class FavouriteFragment : Fragment() {
         favouriteRecycle.layoutManager = GridLayoutManager(requireContext(), 2)
         favouriteRecycle.adapter = adapter
 
-        navController =
-            requireActivity().supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
-                ?.findNavController()
+        navController = requireActivity().supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
+            ?.findNavController()
+
+        dataViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            if (isLoading == false) {
+                initObservers()
+            }
+        }
     }
 
     private fun initObservers() {
         dataViewModel.meals.observe(viewLifecycleOwner, Observer { recipes ->
-            adapter.updateData(recipes)
+            if (recipes != adapter.getCurrentMeals()) {
+                adapter.updateData(recipes)
+                Log.d(TAG, "Meals updated: ${recipes.size} items")
+            } else {
+                Log.d(TAG, "Meals unchanged, skipping update")
+            }
         })
 
         dataViewModel.isFavourite.observe(viewLifecycleOwner, Observer { isFavourite ->
@@ -94,18 +103,41 @@ class FavouriteFragment : Fragment() {
         isChange: Boolean,
         onComplete: (Boolean) -> Unit
     ) {
-        dataViewModel.viewModelScope.launch {
-            dataViewModel.changeFavouriteState(recipeId, isChange)
-        }.invokeOnCompletion {
-            onComplete(favouriteState)
+        if (isGuest && isChange) {
+            CreateMaterialAlertDialogBuilder.createGuestLoginDialog(requireContext())
+            onComplete(false)
+            return
+        }
+
+        if (isChange && favouriteState) {
+            CreateMaterialAlertDialogBuilder.createConfirmRemovalDialog(
+                context = requireContext(),
+                message = "Are you sure you want to remove this meal from your favorites?",
+                positiveAction = {
+                    dataViewModel.viewModelScope.launch {
+                        dataViewModel.changeFavouriteState(recipeId, true)
+                    }.invokeOnCompletion {
+                        onComplete(favouriteState)
+                    }
+                },
+                negativeAction = {
+                    onComplete(favouriteState)
+                }
+            )
+        } else {
+            dataViewModel.viewModelScope.launch {
+                dataViewModel.changeFavouriteState(recipeId, isChange)
+            }.invokeOnCompletion {
+                onComplete(favouriteState)
+            }
         }
     }
 
     private fun goToDetails(id: String) {
-        Log.d(TAG, "goToDetails called with id: $id")
         if (NetworkUtils.isInternetAvailable(requireContext())) {
             dataViewModel.setItemDetails(id)
-            navController?.navigate(R.id.action_details, null, navOptions)
+            val action = FavouriteFragmentDirections.actionFavouriteToDetails(id)
+            findNavController().navigate(action)
         } else {
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("No Internet Connection")
@@ -118,4 +150,22 @@ class FavouriteFragment : Fragment() {
         }
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        if (!isGuest) {
+            dataViewModel.stopFavoritesSync()
+        }
+    }
+
+    private fun FavouriteRecyclerAdapter.getCurrentMeals(): List<Any> {
+        return try {
+            this.javaClass.getDeclaredField("meals").let { field ->
+                field.isAccessible = true
+                @Suppress("UNCHECKED_CAST")
+                field.get(this) as List<Any>
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 }

@@ -17,7 +17,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FoodPlanner"
         tools:targetApi="31">
-
         <activity
             android:name=".SplashActivity"
             android:exported="true">
@@ -26,15 +25,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
+        <activity
+            android:name=".GuestOrLoginActivity"
+            android:exported="false" />
         <activity
             android:name=".main.view.MainActivity"
-            android:windowSoftInputMode="adjustPan"
-            android:exported="false" />
-
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
         <activity
             android:name=".auth.AuthActivity"
             android:exported="false" />
-
     </application>
 </manifest>

@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -15,8 +14,9 @@ import com.example.foodplanner.core.model.remote.Meal
 class AdapterRVItemMeal(
     private var meals: List<Meal>,
     private val goToDetails: ((id: String) -> Unit)? = null,
-    private val changeFav: (id: String, isChange: Boolean, onComplete: (Boolean) -> Unit) -> Unit,
-    private val onAddToPlanClick: ((meal: Meal) -> Unit)? = null
+    private val changeFav: (id: String, isChange: Boolean, onComplete: (Boolean, Boolean) -> Unit) -> Unit, // تعديل لاستقبال متغير الإلغاء
+    private val onAddToPlanClick: ((meal: Meal) -> Unit)? = null,
+    private val isGuest: Boolean = false
 ) : RecyclerView.Adapter<AdapterRVItemMeal.MealViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MealViewHolder {
@@ -28,12 +28,13 @@ class AdapterRVItemMeal(
     override fun onBindViewHolder(holder: MealViewHolder, position: Int) {
         val meal = meals[position]
 
-        // Initial check for the favorite state
-        changeFav(meal.idMeal, false) { isFav ->
-            if (isFav) {
-                holder.favouriteButton.setImageResource(R.drawable.loved_icon)
-            } else {
-                holder.favouriteButton.setImageResource(R.drawable.icons_favorite48)
+        changeFav(meal.idMeal, false) { isFav, isCancelled ->
+            if (!isCancelled) {
+                if (isFav) {
+                    holder.favouriteButton.setImageResource(R.drawable.loved_icon)
+                } else {
+                    holder.favouriteButton.setImageResource(R.drawable.icons_favorite48)
+                }
             }
         }
 
@@ -49,12 +50,13 @@ class AdapterRVItemMeal(
         }
 
         holder.favouriteButton.setOnClickListener {
-            // Change the favorite state when the button is clicked
-            changeFav(meal.idMeal, true) { isFav ->
-                if (isFav) {
-                    holder.favouriteButton.setImageResource(R.drawable.loved_icon)
-                } else {
-                    holder.favouriteButton.setImageResource(R.drawable.icons_favorite48)
+            changeFav(meal.idMeal, true) { isFav, isCancelled ->
+                if (!isCancelled) {
+                    if (isFav) {
+                        holder.favouriteButton.setImageResource(R.drawable.loved_icon)
+                    } else {
+                        holder.favouriteButton.setImageResource(R.drawable.icons_favorite48)
+                    }
                 }
             }
         }
@@ -62,9 +64,6 @@ class AdapterRVItemMeal(
         holder.btnAddToPlan.setOnClickListener {
             onAddToPlanClick?.invoke(meal)
         }
-
-
-
     }
 
     override fun getItemCount(): Int = meals.size

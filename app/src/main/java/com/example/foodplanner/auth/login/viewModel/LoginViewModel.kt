@@ -32,33 +32,33 @@ class LoginViewModel(
     fun loginUser(email: String, password: String) {
         _isLoading.value = true
 
-        viewModelScope.launch(Dispatchers.IO) {
-            auth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    _isLoading.value = false
-                    if (task.isSuccessful) {
-                        val firebaseUser = auth.currentUser
-                        _loginSuccess.value = true
-                        if (firebaseUser != null) {
-                            saveUserToRoom(firebaseUser)
-                        }
-                    } else {
-                        handleLoginError(task.exception)
-                    }
-                }
-        }
-    }
-
-    /** HANDLE FIREBASE GOOGLE AUTHENTICATION **/
-    fun firebaseAuthWithGoogle(idToken: String) {
-        val credential = GoogleAuthProvider.getCredential(idToken, null)
-        auth.signInWithCredential(credential)
+        auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
+                _isLoading.value = false
                 if (task.isSuccessful) {
                     val firebaseUser = auth.currentUser
                     if (firebaseUser != null) {
                         saveUserToRoom(firebaseUser)
                     }
+                    _loginSuccess.value = true // إطلاق loginSuccess مرة واحدة فقط هنا
+                } else {
+                    handleLoginError(task.exception)
+                }
+            }
+    }
+
+    fun firebaseAuthWithGoogle(idToken: String) {
+        _isLoading.value = true
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(credential)
+            .addOnCompleteListener { task ->
+                _isLoading.value = false
+                if (task.isSuccessful) {
+                    val firebaseUser = auth.currentUser
+                    if (firebaseUser != null) {
+                        saveUserToRoom(firebaseUser)
+                    }
+                    _loginSuccess.value = true // إطلاق loginSuccess مرة واحدة فقط هنا
                 } else {
                     _errorMessage.value = "Google sign-in failed"
                     Log.e("LoginViewModel", "Google sign-in failed: ${task.exception?.message}")
@@ -66,7 +66,6 @@ class LoginViewModel(
             }
     }
 
-    /** SAVE AUTHENTICATED USER TO ROOM DATABASE **/
     private fun saveUserToRoom(firebaseUser: FirebaseUser) {
         viewModelScope.launch(Dispatchers.IO) {
             val existingUser = userRepository.getUserByEmail(firebaseUser.email!!)
@@ -80,11 +79,10 @@ class LoginViewModel(
                 )
                 userRepository.addUser(newUser)
             }
-            _loginSuccess.postValue(true)
+            // لا نستخدم postValue هنا لأن loginSuccess يتم إطلاقه بالفعل في الخيط الرئيسي
         }
     }
 
-    /** HANDLE FIREBASE LOGIN ERRORS **/
     private fun handleLoginError(exception: Exception?) {
         Log.d("LoginViewModel", "Login error: ${exception?.message}")
         _errorMessage.value = when (exception) {

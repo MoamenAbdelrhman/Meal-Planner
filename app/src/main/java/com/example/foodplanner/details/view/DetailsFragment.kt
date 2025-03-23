@@ -27,12 +27,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.foodplanner.R
+import com.example.foodplanner.auth.AuthActivity
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase
 import com.example.foodplanner.core.model.remote.Meal
 import com.example.foodplanner.core.model.remote.repository.MealRepositoryImpl
 import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
+import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder
 import com.example.foodplanner.core.viewmodel.DataViewModel
 import com.example.foodplanner.core.viewmodel.DataViewModelFactory
 import com.example.foodplanner.details.view.adapter.DetailsAdapter
@@ -52,6 +54,7 @@ import android.text.style.StyleSpan
 import android.text.style.ForegroundColorSpan
 import android.graphics.Typeface
 import androidx.core.content.ContextCompat
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 class DetailsFragment : Fragment() {
@@ -104,9 +107,11 @@ class DetailsFragment : Fragment() {
     private lateinit var btnShare: ImageButton
     private lateinit var btnAddToPlanDetails: Button
     private var currentMeal: Meal? = null
+    private var isGuest: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        isGuest = requireActivity().intent.getBooleanExtra("IS_GUEST", false)
     }
 
     override fun onCreateView(
@@ -125,12 +130,11 @@ class DetailsFragment : Fragment() {
     }
 
     private fun initViews() {
-        // Youtube
         youtubePlayerView = requireView().findViewById(R.id.youtubePlayer)
         fullScreenContainer = requireView().findViewById(R.id.fullScreenContainer)
         iFramePlayerOptions = IFramePlayerOptions.Builder()
             .controls(1)
-            .fullscreen(1) // enable full screen button
+            .fullscreen(1)
             .build()
         youtubePlayerView.enableAutomaticInitialization = false
         lifecycle.addObserver(youtubePlayerView)
@@ -152,11 +156,9 @@ class DetailsFragment : Fragment() {
         btnShare = requireView().findViewById(R.id.btn_share)
         btnAddToPlanDetails = requireView().findViewById(R.id.btnAddToPlanDetails)
 
-        // Make instructions collapsed by default
         instructionsText.isVisible = false
         instructionsArrow.rotation = 0f
 
-        // تحديد اتجاه RecyclerView
         ingredientsRecycler.layoutManager = LinearLayoutManager(requireContext())
     }
 
@@ -164,7 +166,26 @@ class DetailsFragment : Fragment() {
         backImage.setOnClickListener { navController.popBackStack() }
 
         favouriteImage?.setOnClickListener {
-            changeFavouriteState(recipeId, true)
+            if (isGuest) {
+                showGuestRestrictionDialog("Guests cannot add favorites. Please log in.")
+            } else {
+                val isCurrentlyFavourite = dataViewModel.isFavourite.value ?: false
+                if (isCurrentlyFavourite) {
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("Confirm Removal")
+                        .setMessage("Are you sure you want to remove ${currentMeal?.strMeal ?: "this meal"} from your favorites?")
+                        .setPositiveButton("Yes") { _, _ ->
+                            changeFavouriteState(recipeId, true)
+                        }
+                        .setNegativeButton("No") { dialog, _ ->
+                            dialog.dismiss()
+                        }
+                        .setCancelable(true)
+                        .show()
+                } else {
+                    changeFavouriteState(recipeId, true)
+                }
+            }
         }
 
         ingredientsCard.setOnClickListener {
@@ -182,10 +203,10 @@ class DetailsFragment : Fragment() {
         }
 
         btnAddToPlanDetails.setOnClickListener {
-            currentMeal?.let { meal ->
-                showAddToPlanDialog(meal)
-            } ?: run {
-                Toast.makeText(requireContext(), "No meal available to add", Toast.LENGTH_SHORT).show()
+            if (isGuest) {
+                showGuestRestrictionDialog("Guests cannot add meals to the plan. Please log in.")
+            } else {
+                currentMeal?.let { showAddToPlanDialog(it) }
             }
         }
     }
@@ -213,30 +234,23 @@ class DetailsFragment : Fragment() {
     }
 
     private fun bindData(recipe: Meal) {
-        ingredientsAdapter.updateData(recipe.getIngredientsWithMeasurements()) // استخدام الدالة بدلاً من الخاصية
+        ingredientsAdapter.updateData(recipe.getIngredientsWithMeasurements())
         ingredientsRecycler.adapter = ingredientsAdapter
         mealName.text = recipe.strMeal
         mealCategory.text = recipe.strCategory
         mealArea.text = recipe.strArea
         Glide.with(requireContext()).load(recipe.strMealThumb).into(mealImage)
-        // Format and set the instructions with the desired style
         instructionsText.text = formatInstructions(recipe.strInstructions)
         activateYoutubePlayer(recipe.strYoutube)
     }
 
-    // Format the instructions with "Step X" in bold and custom color
     private fun formatInstructions(instructions: String): SpannableStringBuilder {
-        // Split the instructions into steps based on paragraph breaks (\r\n)
         val steps = instructions.split("\r\n").filter { it.isNotBlank() }
-
         val formattedText = SpannableStringBuilder()
 
         steps.forEachIndexed { index, step ->
-            // Add the "Step X" label (e.g., "Step 1 ", "Step 2 ", etc.)
             val stepLabel = "Step ${index + 1} "
             formattedText.append(stepLabel)
-
-            // Apply bold and custom color to the "Step X" label
             val labelStart = formattedText.length - stepLabel.length
             val labelEnd = formattedText.length
             formattedText.setSpan(
@@ -251,16 +265,11 @@ class DetailsFragment : Fragment() {
                 labelEnd,
                 SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE
             )
-
-            // Add the step description
             formattedText.append(step.trim())
-
-            // Add a newline between steps, except for the last one
             if (index < steps.size - 1) {
                 formattedText.append("\n\n")
             }
         }
-
         return formattedText
     }
 
@@ -294,6 +303,19 @@ class DetailsFragment : Fragment() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun showGuestRestrictionDialog(message: String) {
+        CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel(
+            context = requireContext(),
+            title = "Restricted Action",
+            message = message,
+            positiveBtnMsg = "Log In",
+            negativeBtnMsg = "Cancel",
+            positiveBtnFun = {
+                findNavController().navigate(R.id.action_details_to_authActivity)
+            }
+        )
     }
 
     private fun activateYoutubePlayer(url: String) {

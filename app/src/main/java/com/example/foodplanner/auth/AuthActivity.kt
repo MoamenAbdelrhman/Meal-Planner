@@ -2,77 +2,62 @@ package com.example.foodplanner.auth
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.fragment.app.Fragment
+import androidx.navigation.NavController
+import androidx.navigation.fragment.NavHostFragment
 import com.example.foodplanner.R
-import com.example.foodplanner.auth.login.view.LoginFragment
-import com.example.foodplanner.auth.signup.view.SignupFragment
 import com.example.foodplanner.main.view.MainActivity
 import com.google.firebase.auth.FirebaseAuth
 
 class AuthActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
+    private lateinit var navController: NavController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_auth)
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        Log.d("AuthActivity", "Layout set, attempting to find NavHostFragment")
+
+        // الحصول على NavHostFragment باستخدام supportFragmentManager
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
+        if (navHostFragment == null) {
+            Log.e("AuthActivity", "No NavHostFragment found with ID fragmentContainer")
+            throw IllegalStateException("No NavHostFragment found with ID fragmentContainer in activity_auth.xml")
+        } else {
+            Log.d("AuthActivity", "NavHostFragment found: $navHostFragment")
         }
+
+        // تهيئة NavController من NavHostFragment
+        navController = (navHostFragment as NavHostFragment).navController
+        Log.d("AuthActivity", "NavController initialized: $navController")
 
         auth = FirebaseAuth.getInstance()
 
-
-        // Check if user is already logged in
+        // التحقق من وجود مستخدم مسجل مسبقًا
         if (auth.currentUser != null) {
-            navigateToMainScreen()
-        } else {
-            loadFragment(LoginFragment())
+            Log.d("AuthActivity", "User already logged in, navigating to MainActivity")
+            val intent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            startActivity(intent)
+            finish()
         }
     }
 
-    private fun loadFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, fragment)
-            .commit()
+    override fun onSupportNavigateUp(): Boolean {
+        return navController.navigateUp() || super.onSupportNavigateUp()
     }
 
-    /**
-     * Navigate to the main activity if the user is logged in.
-     */
-    private fun navigateToMainScreen() {
-        val intent = Intent(this, MainActivity::class.java)
-        startActivity(intent)
-        finish()
-    }
-
-    /**
-     * Navigate to SignupFragment.
-     */
-    fun navigateToSignup() {
-        loadFragment(SignupFragment())
-    }
-
-    /**
-     * Navigate to LoginFragment.
-     */
-
-    fun navigateToLogin() {
-        loadFragment(LoginFragment())
-    }
-
-    /**
-     * Navigate to ForgotPasswordFragment.
-     */
-    fun navigateToForgetPassword() {
-        loadFragment(ForgotPasswordFragment())
+    override fun onBackPressed() {
+        if (!navController.popBackStack()) {
+            finish()
+        } else {
+            super.onBackPressed()
+        }
     }
 }

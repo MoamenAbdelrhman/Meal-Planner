@@ -1,13 +1,11 @@
 package com.example.foodplanner.search.adapter
 
-import android.app.AlertDialog
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -15,14 +13,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.foodplanner.R
 import com.example.foodplanner.core.model.remote.Meal
-import com.example.foodplanner.meal_plan.viewModel.MealPlanViewModel
-import com.example.foodplanner.search.view.MealsFragment
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class MealsAdapter(
     private val onItemClick: (String) -> Unit,
-    private val fragment: Fragment,
-    private val mealPlanViewModel: MealPlanViewModel
+    private val onAddToPlanClick: (Meal) -> Unit, // دالة لنقل النقر إلى MealsFragment
+    private val fragment: Fragment
 ) : ListAdapter<Meal, MealsAdapter.MealViewHolder>(MealDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MealViewHolder {
@@ -37,22 +32,7 @@ class MealsAdapter(
         holder.itemView.setOnClickListener { onItemClick(meal.idMeal) }
         holder.ivMealImage.setOnClickListener { onItemClick(meal.idMeal) }
         holder.tvMealName.setOnClickListener { onItemClick(meal.idMeal) }
-        holder.btnAddToPlan.setOnClickListener {
-            showDaySelectionDialog(meal)
-        }
-    }
-
-    private fun showDaySelectionDialog(meal: Meal) {
-        val days = arrayOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
-        AlertDialog.Builder(fragment.requireContext())
-            .setTitle("What day would you like to add ${meal.strMeal} ?")
-            .setItems(days) { _, which ->
-                val selectedDay = days[which]
-                mealPlanViewModel.addMealToPlan(selectedDay, meal)
-                Toast.makeText(fragment.requireContext(), "${meal.strMeal} added to $selectedDay", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+        holder.btnAddToPlan.setOnClickListener { onAddToPlanClick(meal) } // تمرير النقر فقط
     }
 
     class MealViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {

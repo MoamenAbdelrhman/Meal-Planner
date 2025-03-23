@@ -17,7 +17,7 @@ class DetailsViewModel(private val mealRepository: MealRepository) : ViewModel()
         viewModelScope.launch {
             val meal = mealRepository.getMealById(mealId)
             meal?.let {
-                it.populateIngredientsWithMeasures() // استدعاء الدالة لحساب listIngredientsWithMeasures
+                it.populateIngredientsWithMeasures()
                 _recipe.value = it
             }
         }

@@ -1,7 +1,6 @@
 package com.example.foodplanner.auth.signup.view
 
 import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -18,9 +17,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
-import com.example.foodplanner.main.view.MainActivity
+import androidx.navigation.fragment.findNavController
 import com.example.foodplanner.R
-import com.example.foodplanner.auth.AuthActivity
 import com.example.foodplanner.auth.signup.viewModel.SignupViewModel
 import com.example.foodplanner.auth.signup.viewModel.SignupViewModelFactory
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
@@ -55,12 +53,14 @@ class SignupFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var errorTextView: TextView
 
-    private var isValidationStarted = false // متغير لتتبع ما إذا بدأ التحقق
+    private var isValidationStarted = false
 
     private val googleSignInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
+        if (
+
+            result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)
@@ -105,19 +105,18 @@ class SignupFragment : Fragment() {
         progressBar = view.findViewById(R.id.progressBar)
         errorTextView = view.findViewById(R.id.errorTextView)
 
-        // إعداد TextWatcher لتحديث رسائل الخطأ أثناء الكتابة
+        // Setup TextWatcher
         setupTextWatchers()
 
         // Signup Button Click
         signupButton.setOnClickListener {
-            isValidationStarted = true // بدء التحقق عند الضغط الأول
+            isValidationStarted = true
 
             val name = usernameEditText.text.toString().trim()
             val email = emailEditText.text.toString().trim()
             val password = passwordEditText.text.toString().trim()
             val confirmPassword = confirmPasswordEditText.text.toString().trim()
 
-            // إعادة تعيين الأخطاء
             usernameInputLayout.error = null
             emailInputLayout.error = null
             passwordInputLayout.error = null
@@ -136,7 +135,7 @@ class SignupFragment : Fragment() {
 
         // Navigate to Login Fragment
         loginButton.setOnClickListener {
-            (activity as AuthActivity).navigateToLogin()
+            findNavController().navigate(R.id.action_signupFragment_to_loginFragment)
         }
 
         // Google Sign-Up Button Click
@@ -145,32 +144,30 @@ class SignupFragment : Fragment() {
         }
 
         // Observe ViewModel
-        viewModel.signupSuccess.observe(viewLifecycleOwner, Observer { success ->
+        viewModel.signupSuccess.observe(viewLifecycleOwner) { success ->
             if (success) {
                 Toast.makeText(requireActivity(), "Signup successful!", Toast.LENGTH_SHORT).show()
-                startActivity(Intent(requireActivity(), MainActivity::class.java))
-                requireActivity().finish()
+                findNavController().navigate(R.id.action_signupFragment_to_mainActivity)
             }
-        })
+        }
 
-        viewModel.errorMessage.observe(viewLifecycleOwner, Observer { error ->
+        viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
             error?.let {
                 Log.d("SignupFragment", "Error received: $it")
-                errorTextView.text = it // عرض أخطاء Firebase في TextView
+                errorTextView.text = it
             }
-        })
+        }
 
-        viewModel.googleSignInSuccess.observe(viewLifecycleOwner, Observer { success ->
+        viewModel.googleSignInSuccess.observe(viewLifecycleOwner) { success ->
             if (success) {
                 Toast.makeText(context, "Google login successful", Toast.LENGTH_SHORT).show()
-                startActivity(Intent(requireContext(), MainActivity::class.java))
-                requireActivity().finish()
+                findNavController().navigate(R.id.action_signupFragment_to_mainActivity)
             }
-        })
+        }
 
-        viewModel.isLoading.observe(viewLifecycleOwner, Observer { loading ->
+        viewModel.isLoading.observe(viewLifecycleOwner) { loading ->
             progressBar.visibility = if (loading) View.VISIBLE else View.GONE
-        })
+        }
     }
 
     private fun setupTextWatchers() {
@@ -180,17 +177,14 @@ class SignupFragment : Fragment() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
             override fun afterTextChanged(s: Editable?) {
-                // تحديث الرسائل فقط إذا كان التحقق قد بدأ (أي بعد الضغط على "Sign up")
                 if (isValidationStarted) {
                     val name = usernameEditText.text.toString().trim()
                     val email = emailEditText.text.toString().trim()
                     val password = passwordEditText.text.toString().trim()
                     val confirmPassword = confirmPasswordEditText.text.toString().trim()
 
-                    // إعادة التحقق من صحة المدخلات
                     val validationResult = viewModel.validateInputs(name, email, password, confirmPassword)
 
-                    // تحديث رسائل الخطأ بناءً على النتيجة
                     usernameInputLayout.error = validationResult.nameError
                     emailInputLayout.error = validationResult.emailError
                     passwordInputLayout.error = validationResult.passwordError
@@ -199,7 +193,6 @@ class SignupFragment : Fragment() {
             }
         }
 
-        // إضافة TextWatcher لكل حقل
         usernameEditText.addTextChangedListener(textWatcher)
         emailEditText.addTextChangedListener(textWatcher)
         passwordEditText.addTextChangedListener(textWatcher)

@@ -10,11 +10,9 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.example.foodplanner.R
-import com.google.android.gms.tasks.OnFailureListener
-import com.google.android.gms.tasks.OnSuccessListener
 import com.google.firebase.auth.FirebaseAuth
-
 
 class ForgotPasswordFragment : Fragment() {
 
@@ -29,62 +27,57 @@ class ForgotPasswordFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_forgot_password, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        //Initializaton
-        btnBack =  view.findViewById(R.id.btnForgotPasswordBack)
-        btnReset =  view.findViewById(R.id.btnReset)
-        edtEmail =  view.findViewById(R.id.edtForgotPasswordEmail)
-        progressBar =  view.findViewById(R.id.forgetPasswordProgressbar)
+        // Initialization
+        btnBack = view.findViewById(R.id.btnForgotPasswordBack)
+        btnReset = view.findViewById(R.id.btnReset)
+        edtEmail = view.findViewById(R.id.edtForgotPasswordEmail)
+        progressBar = view.findViewById(R.id.forgetPasswordProgressbar)
 
         auth = FirebaseAuth.getInstance()
 
-
-        //Reset Button Listener
+        // Reset Button Listener
         btnReset.setOnClickListener {
             strEmail = edtEmail.text.toString().trim { it <= ' ' }
             if (!TextUtils.isEmpty(strEmail)) {
-                ResetPassword()
+                resetPassword()
             } else {
                 edtEmail.error = "Email field can't be empty"
             }
         }
 
-
-        //Back Button Code
+        // Back Button Listener
         btnBack.setOnClickListener {
-            (activity as AuthActivity).navigateToLogin()
+            findNavController().navigate(R.id.action_forgotPasswordFragment_to_loginFragment)
         }
     }
 
-    private fun ResetPassword() {
+    private fun resetPassword() {
         progressBar.visibility = View.VISIBLE
         btnReset.visibility = View.INVISIBLE
 
         auth.sendPasswordResetEmail(strEmail)
-            .addOnSuccessListener(OnSuccessListener<Void?> {
+            .addOnSuccessListener {
                 Toast.makeText(
                     requireActivity(),
                     "Reset Password link has been sent to your registered Email",
                     Toast.LENGTH_SHORT
                 ).show()
-                (activity as AuthActivity).navigateToLogin()
-            })
-            .addOnFailureListener(OnFailureListener { e ->
+                findNavController().navigate(R.id.action_forgotPasswordFragment_to_loginFragment)
+            }
+            .addOnFailureListener { e ->
                 Toast.makeText(
                     requireActivity(),
-                    "Error :- " + e.message,
+                    "Error: ${e.message}",
                     Toast.LENGTH_SHORT
                 ).show()
                 progressBar.visibility = View.INVISIBLE
                 btnReset.visibility = View.VISIBLE
-            })
+            }
     }
-
-
 }
