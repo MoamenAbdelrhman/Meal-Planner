@@ -1,4 +1,4 @@
-package com.example.foodplanner.auth
+package com.example.foodplanner.auth.view
 
 import android.content.Intent
 import android.os.Bundle
@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.example.foodplanner.R
+import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder
 import com.example.foodplanner.main.view.MainActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
@@ -27,25 +28,16 @@ class AuthActivity : AppCompatActivity() {
         // Read guest status from Intent
         isGuest = intent.getBooleanExtra("IS_GUEST", false)
 
-        Log.d("AuthActivity", "Layout set, attempting to find NavHostFragment")
 
         // Initialize NavHostFragment and NavController
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
-        if (navHostFragment == null) {
-            Log.e("AuthActivity", "No NavHostFragment found with ID fragmentContainer")
-            throw IllegalStateException("No NavHostFragment found with ID fragmentContainer in activity_auth.xml")
-        } else {
-            Log.d("AuthActivity", "NavHostFragment found: $navHostFragment")
-        }
 
         navController = (navHostFragment as NavHostFragment).navController
-        Log.d("AuthActivity", "NavController initialized: $navController")
 
         auth = FirebaseAuth.getInstance()
 
         // Check if a user is already logged in and redirect to MainActivity if true
         if (auth.currentUser != null) {
-            Log.d("AuthActivity", "User already logged in, navigating to MainActivity")
             val intent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 putExtra("IS_GUEST", false)
@@ -55,34 +47,39 @@ class AuthActivity : AppCompatActivity() {
         }
     }
 
-    // Handle navigation up action for the NavController
     override fun onSupportNavigateUp(): Boolean {
         return navController.navigateUp() || super.onSupportNavigateUp()
     }
 
-    // Handle back press to either pop the back stack or show a dialog to exit/continue as guest
     override fun onBackPressed() {
-        if (!navController.popBackStack()) {
-            MaterialAlertDialogBuilder(this)
-                .setMessage("Do you want to exit the app or continue as a guest?")
-                .setPositiveButton("Continue as Guest") { _, _ ->
-                    // Navigate to MainActivity as a guest and clear the task stack
-                    val intent = Intent(this, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        putExtra("IS_GUEST", true)
-                    }
-                    startActivity(intent)
-                    finish()
-                }
-                .setNegativeButton("Exit") { _, _ ->
-                    // Show a toast and close all activities in the current task
-                    Toast.makeText(this, "Exiting the app", Toast.LENGTH_SHORT).show()
-                    finishAffinity()
-                }
-                .setCancelable(true)
-                .show()
-        } else {
-            super.onBackPressed()
+        if (navController.popBackStack()) {
+            return
         }
+
+        CreateMaterialAlertDialogBuilder.createExitOrContinueAsGuestDialog(
+            context = this,
+            onExit = {
+                Toast.makeText(this, "Exiting the app", Toast.LENGTH_SHORT).show()
+                super.onBackPressed()
+            },
+            onContinueAsGuest = {
+                val intent = Intent(this, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    putExtra("IS_GUEST", true)
+                }
+                startActivity(intent)
+                finish()
+            },
+            onCancel = {
+                if (navController.currentDestination?.id != R.id.loginFragment) {
+                    try {
+                        navController.navigate(R.id.loginFragment)
+                    } catch (e: IllegalStateException) {
+                        Toast.makeText(this,"Failed to reset to LoginFragment: ${e.message}",Toast.LENGTH_SHORT).show()
+
+                    }
+                }
+            }
+        )
     }
 }

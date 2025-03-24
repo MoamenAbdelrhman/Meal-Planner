@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.example.foodplanner.core.model.MealPlanEntity
+import com.example.foodplanner.core.model.entity.MealPlanEntity
 
 @Dao
 interface MealPlanDao {

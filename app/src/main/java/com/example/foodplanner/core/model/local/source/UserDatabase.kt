@@ -6,12 +6,12 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.foodplanner.core.model.remote.source.FavouriteMealDao
-import com.example.foodplanner.core.model.FavouriteMealEntity
-import com.example.foodplanner.core.model.MealEntity
+import com.example.foodplanner.core.model.entity.FavouriteMealEntity
+import com.example.foodplanner.core.model.entity.MealEntity
 import com.example.foodplanner.core.model.local.MyTypeConverters
 import com.example.foodplanner.core.model.local.User
 import com.example.foodplanner.core.model.remote.source.MealPlanDao
-import com.example.foodplanner.core.model.MealPlanEntity
+import com.example.foodplanner.core.model.entity.MealPlanEntity
 
 @Database(entities = [User::class, MealEntity::class, MealPlanEntity::class, FavouriteMealEntity::class], version = 8, exportSchema = false)
 @TypeConverters(MyTypeConverters::class)

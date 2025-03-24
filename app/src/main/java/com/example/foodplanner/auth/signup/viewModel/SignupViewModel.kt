@@ -33,8 +33,8 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
     private val _errorMessage = MutableLiveData<String?>()
     val errorMessage: MutableLiveData<String?> get() = _errorMessage
 
-    private val _googleSignInSuccess = MutableLiveData<Boolean>()
-    val googleSignInSuccess: LiveData<Boolean> get() = _googleSignInSuccess
+    private val _googleSignUpSuccess = MutableLiveData<Boolean>()
+    val googleSignUpSuccess: LiveData<Boolean> get() = _googleSignUpSuccess
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> get() = _isLoading
@@ -90,15 +90,13 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
         auth.fetchSignInMethodsForEmail(email)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    val result = task.result
-                    val signInMethods = result?.signInMethods
+                    val signInMethods = task.result?.signInMethods
                     if (signInMethods != null && signInMethods.isNotEmpty()) {
                         _errorMessage.value = "This email is already registered"
                         _isLoading.value = false
                     } else {
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { createTask ->
-                                _isLoading.value = false
                                 if (createTask.isSuccessful) {
                                     val firebaseUser = auth.currentUser
                                     if (firebaseUser != null) {
@@ -108,14 +106,28 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
                                         firebaseUser.updateProfile(profileUpdates)
                                             .addOnCompleteListener { profileTask ->
                                                 if (profileTask.isSuccessful) {
-                                                    saveUserToRoom(firebaseUser, username)
+                                                    saveUserToRoom(firebaseUser, username, isGoogleSignUp = false)
+                                                    auth.signInWithEmailAndPassword(email, password)
+                                                        .addOnCompleteListener { signInTask ->
+                                                            _isLoading.value = false
+                                                            if (signInTask.isSuccessful) {
+                                                                _signupSuccess.value = true
+                                                            } else {
+                                                                _errorMessage.value = "Sign-in after signup failed: ${signInTask.exception?.message}"
+                                                            }
+                                                        }
                                                 } else {
                                                     _errorMessage.value = "Failed to update profile: ${profileTask.exception?.message}"
+                                                    _isLoading.value = false
                                                 }
                                             }
+                                    } else {
+                                        _errorMessage.value = "User creation succeeded but firebaseUser is null"
+                                        _isLoading.value = false
                                     }
                                 } else {
                                     _errorMessage.value = "Signup failed: ${createTask.exception?.message}"
+                                    _isLoading.value = false
                                 }
                             }
                     }
@@ -127,7 +139,7 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
     }
 
     // Sign in a user using Google credentials and save their info
-    fun signInWithGoogle(idToken: String) {
+    fun signUpWithGoogle(idToken: String) {
         _isLoading.value = true
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         auth.signInWithCredential(credential)
@@ -136,31 +148,22 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
                 if (task.isSuccessful) {
                     val firebaseUser = auth.currentUser
                     if (firebaseUser != null) {
-                        Log.d("SignupViewModel", "Google sign-in successful for user: ${firebaseUser.email}, UID: ${firebaseUser.uid}")
-                        if (task.result?.additionalUserInfo?.isNewUser == true) {
-                            Log.d("SignupViewModel", "New user created in Firebase")
-                        } else {
-                            Log.d("SignupViewModel", "Existing user signed in")
-                        }
-                        saveUserToRoom(firebaseUser, firebaseUser.displayName ?: "Unknown")
+                        saveUserToRoom(firebaseUser, firebaseUser.displayName ?: "Unknown", isGoogleSignUp = true)
                     } else {
-                        Log.e("SignupViewModel", "Google sign-in succeeded but firebaseUser is null")
                         _errorMessage.value = "Google login failed: User not found"
                     }
                 } else {
-                    Log.e("SignupViewModel", "Google sign-in failed: ${task.exception?.message}")
                     _errorMessage.value = "Google login failed: ${task.exception?.message}"
                 }
             }
             .addOnFailureListener { exception ->
-                Log.e("SignupViewModel", "Google sign-in failed with exception: ${exception.message}")
                 _errorMessage.value = "Google login failed: ${exception.message}"
                 _isLoading.value = false
             }
     }
 
     // Save the user's information to the local Room database
-    private fun saveUserToRoom(firebaseUser: FirebaseUser, username: String) {
+    private fun saveUserToRoom(firebaseUser: FirebaseUser, username: String, isGoogleSignUp: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             val existingUser = userRepository.getUserByEmail(firebaseUser.email!!)
             if (existingUser == null) {
@@ -172,12 +175,12 @@ class SignupViewModel(private val userRepository: UserRepositoryImpl) : ViewMode
                     username = username
                 )
                 userRepository.addUser(newUser)
-                Log.d("SignupViewModel", "User saved to Room: ${newUser.email}")
-            } else {
-                Log.d("SignupViewModel", "User already exists in Room: ${existingUser.email}")
             }
-            _signupSuccess.postValue(true)
-            _googleSignInSuccess.postValue(true)
+            if (isGoogleSignUp) {
+                _googleSignUpSuccess.postValue(true)
+            } else {
+                _signupSuccess.postValue(true)
+            }
         }
     }
 }

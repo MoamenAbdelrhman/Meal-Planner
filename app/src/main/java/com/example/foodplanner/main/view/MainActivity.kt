@@ -2,6 +2,8 @@ package com.example.foodplanner.main.view
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
@@ -19,9 +21,9 @@ import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.foodplanner.R
-import com.example.foodplanner.auth.AuthActivity
-import com.example.foodplanner.auth.AuthViewModel
-import com.example.foodplanner.auth.AuthViewModelFactory
+import com.example.foodplanner.auth.view.AuthActivity
+import com.example.foodplanner.auth.viewmodel.AuthViewModel
+import com.example.foodplanner.auth.viewmodel.AuthViewModelFactory
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase
@@ -76,6 +78,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val auth = FirebaseAuth.getInstance()
     private var isGuest: Boolean = false
     private lateinit var authStateListener: AuthStateListener
+    private lateinit var authStateHandler: Handler
 
     private val navOptions = NavOptions.Builder()
         .setEnterAnim(R.anim.slide_in_right)
@@ -89,6 +92,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         isGuest = intent.getBooleanExtra("IS_GUEST", false)
         initUi()
+        authStateHandler = Handler(Looper.getMainLooper())
 
         navController = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment)!!
@@ -114,6 +118,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 userName.text = firebaseAuth.currentUser?.displayName ?: "Unknown"
                 userEmail.text = firebaseAuth.currentUser?.email ?: "No email"
                 updateNavigationMenu()
+            } else if (!isGuest) {
+                authStateHandler.removeCallbacksAndMessages(null)
+                authStateHandler.postDelayed({
+                    if (firebaseAuth.currentUser == null) {
+                        Log.d(
+                            "MainActivity",
+                            "No user detected after delay, redirecting to AuthActivity"
+                        )
+                        navigateToAuthActivity(clearTask = true, isGuest = true)
+                    }
+                }, 1000)
             }
         }
 
@@ -166,9 +181,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // Hide bottom navigation for specific fragments
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
-                R.id.mealsFragment, R.id.action_details -> {
+//                R.id.mealsFragment,
+                 R.id.action_details -> {
                     bottomNavigationView.visibility = View.GONE
                 }
+
                 else -> {
                     bottomNavigationView.visibility = View.VISIBLE
                 }
@@ -225,16 +242,29 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         authViewModel.loggedOut.observe(this) { response ->
                             when (response) {
                                 is Response.Loading -> {
-                                    Toast.makeText(this, "Logging out...", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this, "Logging out...", Toast.LENGTH_SHORT)
+                                        .show()
                                 }
+
                                 is Response.Success -> {
-                                    Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        this,
+                                        "Logged out successfully",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                     isGuest = true
                                     navigateToAuthActivity(clearTask = true, isGuest = true)
                                 }
+
                                 is Response.Failure -> {
-                                    Toast.makeText(this, "Failed to log out: ${response.reason}", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(
+                                        this,
+                                        "Failed to log out: ${response.reason}",
+                                        Toast.LENGTH_LONG
+                                    ).show()
                                 }
+
+                                else -> {}
                             }
                         }
                     }
@@ -254,27 +284,63 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                             Toast.makeText(this, "No user is signed in", Toast.LENGTH_SHORT).show()
                             return@createMaterialAlertDialogBuilderOkCancel
                         }
+                        // Clear meal plans first
                         mealPlanViewModel.clearMealPlanForUser(userId)
-                        mealPlanViewModel.clearMealPlanResult.observe(this) { success ->
-                            if (success) {
-                                authViewModel.deleteAccount()
-                                authViewModel.deletedAccount.observe(this) { response ->
-                                    when (response) {
-                                        is Response.Loading -> {
-                                            Toast.makeText(this, "Deleting account...", Toast.LENGTH_SHORT).show()
+                        mealPlanViewModel.clearMealPlanResult.observe(this) { mealPlanSuccess ->
+                            if (mealPlanSuccess) {
+                                // Clear favorites next
+                                dataViewModel.clearFavouriteForUser(userId)
+                                dataViewModel.clearFavouriteResult.observe(this) { favouriteSuccess ->
+                                    if (favouriteSuccess) {
+                                        // Proceed with account deletion
+                                        authViewModel.deleteAccount()
+                                        authViewModel.deletedAccount.observe(this) { response ->
+                                            when (response) {
+                                                is Response.Loading -> {
+                                                    Toast.makeText(
+                                                        this,
+                                                        "Deleting account...",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+
+                                                is Response.Success -> {
+                                                    Toast.makeText(
+                                                        this,
+                                                        "Account deleted successfully",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                    isGuest = true
+                                                    auth.removeAuthStateListener(authStateListener)
+                                                    authStateHandler.removeCallbacksAndMessages(null)
+                                                    navigateToAuthActivity(clearTask = true, isGuest = true)
+                                                }
+
+                                                is Response.Failure -> {
+                                                    Toast.makeText(
+                                                        this,
+                                                        "Failed to delete account: ${response.reason}",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                }
+
+                                                else -> {}
+                                            }
                                         }
-                                        is Response.Success -> {
-                                            Toast.makeText(this, "Account deleted successfully", Toast.LENGTH_SHORT).show()
-                                            isGuest = true
-                                            navigateToAuthActivity(clearTask = true, isGuest = true)
-                                        }
-                                        is Response.Failure -> {
-                                            Toast.makeText(this, "Failed to delete account: ${response.reason}", Toast.LENGTH_LONG).show()
-                                        }
+                                    } else {
+                                        Toast.makeText(
+                                            this,
+                                            "Failed to clear favorites",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                 }
                             } else {
-                                Toast.makeText(this, "Failed to clear meal plans", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    this,
+                                    "Failed to clear meal plans",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     }
@@ -309,6 +375,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onDestroy() {
         super.onDestroy()
         auth.removeAuthStateListener(authStateListener)
-        Log.d("MainActivity", "AuthStateListener removed in onDestroy")
+        authStateHandler.removeCallbacksAndMessages(null)
     }
 }

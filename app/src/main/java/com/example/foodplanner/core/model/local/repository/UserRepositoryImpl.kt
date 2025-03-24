@@ -1,17 +1,9 @@
 package com.example.foodplanner.core.model.local.repository
 
 import android.util.Log
-import com.example.foodplanner.core.model.MealEntity
 import com.example.foodplanner.core.model.local.User
 import com.example.foodplanner.core.model.local.source.LocalDataSource
-import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
-import com.example.foodplanner.core.model.local.source.UserDao
-import com.example.foodplanner.core.model.remote.IngredientResponse
-import com.example.foodplanner.core.model.remote.repository.MealRepository
-import com.example.foodplanner.core.model.remote.source.GsonApi
-import com.example.foodplanner.core.model.remote.source.RemoteGsonData
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext

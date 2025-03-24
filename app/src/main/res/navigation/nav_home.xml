@@ -64,34 +64,20 @@
         android:id="@+id/action_search"
         android:name="com.example.foodplanner.search.view.SearchFragment"
         android:label="SearchFragment">
-        <action
+       <!-- <action
             android:id="@+id/action_search_to_mealsFragment"
-            app:destination="@id/mealsFragment" />
+            app:destination="@id/mealsFragment" />-->
         <action
             android:id="@+id/action_search_to_details"
             app:destination="@id/action_details" />
         <action
             android:id="@+id/action_search_to_authActivity"
             app:destination="@id/authActivity" />
+        <action
+            android:id="@+id/action_action_search_to_action_details"
+            app:destination="@id/action_details" />
     </fragment>
 
-    <fragment
-        android:id="@+id/mealsFragment"
-        android:name="com.example.foodplanner.search.view.MealsFragment"
-        android:label="MealsFragment">
-        <argument
-            android:name="query"
-            app:argType="string" />
-        <argument
-            android:name="type"
-            app:argType="string" />
-        <action
-            android:id="@+id/action_mealsFragment_to_details"
-            app:destination="@id/action_details" />
-        <action
-            android:id="@+id/action_mealsFragment_to_authActivity"
-            app:destination="@id/authActivity" />
-    </fragment>
 
     <fragment
         android:id="@+id/action_about"
@@ -107,6 +93,6 @@
 
     <activity
         android:id="@+id/authActivity"
-        android:name="com.example.foodplanner.auth.AuthActivity"
+        android:name="com.example.foodplanner.auth.view.AuthActivity"
         android:label="AuthActivity" />
 </navigation>

@@ -1,9 +1,8 @@
-package com.example.foodplanner.auth
+package com.example.foodplanner.auth.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.foodplanner.core.model.local.repository.UserRepository
-import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 
 class AuthViewModelFactory(private val userRepository: UserRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {

@@ -15,8 +15,8 @@ import com.example.foodplanner.core.model.remote.Meal
 import com.example.foodplanner.core.model.remote.repository.MealRepository
 import com.example.foodplanner.core.model.remote.repository.MealRepositoryImpl
 import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
-import com.example.foodplanner.core.model.toFavouriteMealEntity
-import com.example.foodplanner.core.model.toMeal
+import com.example.foodplanner.core.model.entity.toFavouriteMealEntity
+import com.example.foodplanner.core.model.entity.toMeal
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
@@ -52,6 +52,9 @@ class DataViewModel(
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> get() = _isLoading
+
+    private val _clearFavouriteResult = MutableLiveData<Boolean>()
+    val clearFavouriteResult: LiveData<Boolean> get() = _clearFavouriteResult
 
     private val _categorySearch = MutableLiveData<String?>()
     val categorySearch: LiveData<String?> get() = _categorySearch
@@ -187,6 +190,23 @@ class DataViewModel(
                 getMeals()
             }
             _isFavourite.value = currentFavouriteState
+        }
+    }
+
+    fun clearFavouriteForUser(userId: String) {
+        viewModelScope.launch {
+            try {
+                // Clear from Room
+                favouriteMealDao.clearFavouriteMeals(userId)
+                // Clear from Firebase
+                FirebaseDatabase.getInstance().getReference("/users/$userId/favorites").removeValue()
+                _clearFavouriteResult.postValue(true)
+                // Refresh the UI after clearing
+                loadFavoriteItems()
+            } catch (e: Exception) {
+                Log.e("DataViewModel", "Failed to clear favorites for user $userId", e)
+                _clearFavouriteResult.postValue(false)
+            }
         }
     }
 

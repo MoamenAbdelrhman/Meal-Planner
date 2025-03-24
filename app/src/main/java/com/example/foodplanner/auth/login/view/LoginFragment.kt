@@ -15,13 +15,10 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.example.foodplanner.main.view.MainActivity
 import com.example.foodplanner.R
-import com.example.foodplanner.auth.AuthActivity
 import com.example.foodplanner.auth.login.viewModel.LoginViewModel
 import com.example.foodplanner.auth.login.viewModel.LoginViewModelFactory
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
@@ -70,7 +67,6 @@ class LoginFragment : Fragment() {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             handleSignInResult(task)
         } else {
-            Log.w("GoogleSignIn", "Google Sign-In failed")
             showToast(getString(R.string.google_sign_in_failed))
         }
     }
@@ -113,11 +109,31 @@ class LoginFragment : Fragment() {
         }
 
         signupButton.setOnClickListener {
-            findNavController().navigate(R.id.action_loginFragment_to_signupFragment)
+            if (!isAdded || isDetached) {
+                Log.w("LoginFragment", "Cannot navigate: Fragment not attached to activity")
+                Toast.makeText(requireContext(), "Fragment not ready, please try again", Toast.LENGTH_SHORT).show()
+            } else if (findNavController().currentDestination?.id != R.id.loginFragment) {
+                Log.w("LoginFragment", "Cannot navigate: Current destination is ${findNavController().currentDestination?.id}, expected ${R.id.loginFragment}")
+                Toast.makeText(requireContext(), "Navigation state error, please try again", Toast.LENGTH_SHORT).show()
+            } else {
+                try {
+                    findNavController().navigate(R.id.action_loginFragment_to_signupFragment)
+                } catch (e: IllegalArgumentException) {
+                    Log.e("LoginFragment", "Navigation failed: ${e.message}", e)
+                    Toast.makeText(requireContext(), "Navigation error, please try again", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         forgetPasswordButton.setOnClickListener {
-            findNavController().navigate(R.id.action_loginFragment_to_forgotPasswordFragment)
+            if (isAdded && !isDetached && findNavController().currentDestination?.id == R.id.loginFragment) {
+                try {
+                    findNavController().navigate(R.id.action_loginFragment_to_forgotPasswordFragment)
+                } catch (e: IllegalArgumentException) {
+                    Log.e("LoginFragment", "Navigation failed: ${e.message}", e)
+                    Toast.makeText(requireContext(), "Navigation error, please try again", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -168,7 +184,6 @@ class LoginFragment : Fragment() {
             val account = task.getResult(ApiException::class.java)
             viewModel.firebaseAuthWithGoogle(account.idToken!!)
         } catch (e: ApiException) {
-            Log.w("GoogleSignIn", "Sign-in failed: ${e.statusCode}")
             showToast(getString(R.string.google_sign_in_failed))
         }
     }
@@ -211,12 +226,10 @@ class LoginFragment : Fragment() {
             return
         }
 
-        Log.d("LoginFragment", "Checking sign-in methods for email: $email")
         FirebaseAuth.getInstance().fetchSignInMethodsForEmail(email)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val signInMethods = task.result?.signInMethods
-                    Log.d("LoginFragment", "Sign-in methods for $email: $signInMethods")
                     if (signInMethods != null && signInMethods.contains(GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD)) {
                         errorTextView.text = "This account is linked to Google. Please use Google Sign-In."
                     } else if (signInMethods.isNullOrEmpty()) {
@@ -225,7 +238,6 @@ class LoginFragment : Fragment() {
                         errorTextView.text = "Invalid email or password. Please try again."
                     }
                 } else {
-                    Log.e("LoginFragment", "Error checking sign-in methods: ${task.exception?.message}")
                     errorTextView.text = "Error checking account type: ${task.exception?.message}"
                     showToast("Failed to check account. Try signing in with Google.")
                 }

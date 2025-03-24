@@ -16,8 +16,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
 import android.view.animation.AnimationSet
-import com.example.foodplanner.auth.AuthViewModel
-import com.example.foodplanner.auth.AuthViewModelFactory
+import com.example.foodplanner.auth.viewmodel.AuthViewModel
+import com.example.foodplanner.auth.viewmodel.AuthViewModelFactory
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase

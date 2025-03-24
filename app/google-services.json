@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "144709281679",
+    "firebase_url": "https://food-planner-631e2-default-rtdb.firebaseio.com",
     "project_id": "food-planner-631e2",
     "storage_bucket": "food-planner-631e2.firebasestorage.app"
   },

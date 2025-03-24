@@ -1,4 +1,4 @@
-package com.example.foodplanner.auth
+package com.example.foodplanner.auth.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -9,9 +9,6 @@ import com.example.foodplanner.core.model.local.User
 import com.example.foodplanner.core.model.local.repository.UserRepository
 import com.example.foodplanner.core.model.remote.FailureReason
 import com.example.foodplanner.core.model.remote.Response
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.IOException
 

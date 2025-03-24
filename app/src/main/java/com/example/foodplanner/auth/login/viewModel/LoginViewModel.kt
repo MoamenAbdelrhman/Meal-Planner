@@ -71,7 +71,7 @@ class LoginViewModel(
             val existingUser = userRepository.getUserByEmail(firebaseUser.email!!)
             if (existingUser == null) {
                 val newUser = User(
-                    id = "0",
+                    id = firebaseUser.uid,
                     firebaseId = firebaseUser.uid,
                     email = firebaseUser.email!!,
                     password = "",

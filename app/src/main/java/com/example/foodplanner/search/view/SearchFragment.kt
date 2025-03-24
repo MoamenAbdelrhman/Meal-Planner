@@ -450,15 +450,19 @@ class SearchFragment : Fragment() {
 
     // Navigate to meal details screen with the given meal ID
     private fun goToDetails(id: String) {
-        dataViewModel.setItemDetails(id)
-        val action = SearchFragmentDirections.actionSearchToDetails(id)
-        findNavController().navigate(action)
+        if (isGuest) {
+            CreateMaterialAlertDialogBuilder.createGuestLoginDialog(requireContext())
+        } else {
+            dataViewModel.setItemDetails(id)
+            val action = SearchFragmentDirections.actionActionSearchToActionDetails(id)
+            findNavController().navigate(action)
+        }
     }
 
     // Handle adding a meal to the plan with guest restrictions
     private fun handleAddToPlanClick(meal: Meal) {
         if (isGuest) {
-            showGuestRestrictionDialog("Guests cannot add meals to the plan. Please log in.")
+            CreateMaterialAlertDialogBuilder.createGuestLoginDialog(requireContext())
         } else {
             showAddToPlanDialog(meal)
         }

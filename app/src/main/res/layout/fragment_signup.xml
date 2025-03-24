@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:fillViewport="true"
     android:fitsSystemWindows="true"
-    android:background="@color/background"
+    android:background="@color/white"
     tools:context=".auth.signup.view.SignupFragment">
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -145,7 +145,7 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/signupButton"
+                android:id="@+id/signupButtonS"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:text="Sign up"
@@ -169,7 +169,7 @@
                 android:orientation="horizontal"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/signupButton">
+                app:layout_constraintTop_toBottomOf="@+id/signupButtonS">
 
                 <View
                     android:layout_width="175dp"

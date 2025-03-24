@@ -1,7 +1,6 @@
 package com.example.foodplanner.home.view
 
 import android.app.AlertDialog
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -27,7 +26,6 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
 import com.example.foodplanner.R
-import com.example.foodplanner.auth.AuthActivity
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase
@@ -555,8 +553,12 @@ class HomeFragment : Fragment() {
 
     // Navigate to meal details screen with the given meal ID
     private fun goToDetails(id: String) {
-        dataViewModel.setItemDetails(id)
-        navController?.navigate(R.id.action_details, null, navOptions)
+        if (isGuest) {
+            CreateMaterialAlertDialogBuilder.createGuestLoginDialog(requireContext())
+        } else {
+            dataViewModel.setItemDetails(id)
+            navController?.navigate(R.id.action_details, null, navOptions)
+        }
     }
 
     // Navigate to search screen with the selected category

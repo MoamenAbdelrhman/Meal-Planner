@@ -92,7 +92,7 @@
                         android:id="@+id/overviewDescriptionTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="MealPlanner is an Android app crafted to streamline your meal planning and inspire a healthier lifestyle. From browsing diverse recipes to organizing your weekly meals and saving favorites for offline access, MealPlanner puts you in charge of your diet with simplicity and style. Powered by TheMealDB API, it offers a personalized culinary journey at your fingertips."
+                        android:text="@string/Overview"
                         android:textSize="16sp"
                         android:textColor="@color/black" />
                 </LinearLayout>
@@ -127,7 +127,7 @@
                         android:id="@+id/coreFeaturesDescriptionTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="• Meal of the Day: Discover a random meal daily for inspiration.\n\n• Advanced Search: Find recipes by category, country, or ingredient.\n\n• Categories and Countries: Browse meal categories and popular dishes by region.\n\n• Weekly Meal Planning: Easily plan and manage your weekly meals.\n\n• Favorites: Save recipes locally with Room for instant access.\n\n• Recipe Details: Explore ingredients, instructions, and nutritional info."
+                        android:text="@string/Core_Features"
                         android:textSize="16sp"
                         android:textColor="@color/black" />
                 </LinearLayout>
@@ -162,7 +162,7 @@
                         android:id="@+id/enhancedFeaturesDescriptionTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="• Offline Access: View saved favorites and plans without internet.\n\n• Data Sync: Backup and sync your data seamlessly with Firebase.\n\n• Personalized Plans: Tailor meal plans to your dietary preferences.\n\n• Guest Mode: Browse categories, search, and view the Meal of the Day without logging in."
+                        android:text="@string/Enhanced_Features"
                         android:textSize="16sp"
                         android:textColor="@color/black" />
                 </LinearLayout>
@@ -197,7 +197,7 @@
                         android:id="@+id/userExperienceDescriptionTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="• Intuitive Navigation: Seamlessly switch between features with a Bottom Navigation bar.\n\n• Secure Authentication: Log in via email or social media (Google, Facebook, Twitter) with Firebase.\n\n• Persistent Login: Stay logged in for uninterrupted planning.\n\n• Quick Start: Resume your plans instantly upon launch."
+                        android:text="@string/user_experience"
                         android:textSize="16sp"
                         android:textColor="@color/black" />
                 </LinearLayout>
@@ -232,7 +232,7 @@
                         android:id="@+id/technicalHighlightsDescriptionTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="• Powered by TheMealDB API for a vast recipe library.\n\n• Room Database for reliable local storage.\n\n• Firebase for robust authentication and cloud syncing.\n\n• Modern MVVM Architecture for a scalable, efficient design."
+                        android:text="@string/Technical_Highlights"
                         android:textSize="16sp"
                         android:textColor="@color/black" />
                 </LinearLayout>
@@ -267,7 +267,7 @@
                         android:id="@+id/closingDescriptionTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Simplify your meal routine, eat healthier, and enjoy a tailored planning experience—all in one sleek app. Get started today and elevate your nutrition journey!"
+                        android:text="@string/Why_MealPlanner"
                         android:textSize="16sp"
                         android:textColor="@color/black" />
                 </LinearLayout>

@@ -1,6 +1,7 @@
 package com.example.foodplanner.auth.signup.view
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -24,6 +25,7 @@ import com.example.foodplanner.auth.signup.viewModel.SignupViewModelFactory
 import com.example.foodplanner.core.model.local.repository.UserRepositoryImpl
 import com.example.foodplanner.core.model.local.source.LocalDataSourceImpl
 import com.example.foodplanner.core.model.local.source.UserDatabase
+import com.example.foodplanner.main.view.MainActivity
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -48,35 +50,30 @@ class SignupFragment : Fragment() {
     private lateinit var emailInputLayout: TextInputLayout
     private lateinit var passwordInputLayout: TextInputLayout
     private lateinit var confirmPasswordInputLayout: TextInputLayout
-    private lateinit var signupButton: Button
+    private lateinit var signupButtonS: Button
     private lateinit var loginButton: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var errorTextView: TextView
 
     private var isValidationStarted = false
 
-    private val googleSignInLauncher = registerForActivityResult(
+    private val googleSignUpLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (
-
             result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)
                 if (account != null) {
-                    Log.d("SignupFragment", "Google account retrieved: ${account.email}")
-                    viewModel.signInWithGoogle(account.idToken!!)
+                    viewModel.signUpWithGoogle(account.idToken!!)
                 } else {
-                    Log.e("SignupFragment", "Google account is null")
                     Toast.makeText(context, "Google sign-in failed: No account", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: ApiException) {
-                Log.e("SignupFragment", "Google sign-in failed: ${e.statusCode}, ${e.message}")
                 Toast.makeText(context, "Google sign-in failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         } else {
-            Log.w("SignupFragment", "Google sign-in result not OK: ${result.resultCode}")
             Toast.makeText(context, "Google sign-in canceled", Toast.LENGTH_SHORT).show()
         }
     }
@@ -100,7 +97,7 @@ class SignupFragment : Fragment() {
         emailInputLayout = view.findViewById(R.id.emailInputLayout)
         passwordInputLayout = view.findViewById(R.id.passwordInputLayout)
         confirmPasswordInputLayout = view.findViewById(R.id.confirmPasswordInputLayout)
-        signupButton = view.findViewById(R.id.signupButton)
+        signupButtonS = view.findViewById(R.id.signupButtonS)
         loginButton = view.findViewById(R.id.loginButton)
         progressBar = view.findViewById(R.id.progressBar)
         errorTextView = view.findViewById(R.id.errorTextView)
@@ -109,7 +106,7 @@ class SignupFragment : Fragment() {
         setupTextWatchers()
 
         // Signup Button Click
-        signupButton.setOnClickListener {
+        signupButtonS.setOnClickListener {
             isValidationStarted = true
 
             val name = usernameEditText.text.toString().trim()
@@ -135,19 +132,31 @@ class SignupFragment : Fragment() {
 
         // Navigate to Login Fragment
         loginButton.setOnClickListener {
-            findNavController().navigate(R.id.action_signupFragment_to_loginFragment)
+            if (isAdded && !isDetached) {
+                try {
+                    findNavController().popBackStack(R.id.loginFragment, false)
+                } catch (e: IllegalStateException) {
+                    Toast.makeText(requireContext(), "Navigation error, please try again", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         // Google Sign-Up Button Click
         view.findViewById<com.google.android.material.button.MaterialButton>(R.id.googleSignUpButton).setOnClickListener {
-            signInWithGoogle()
+            signUpWithGoogle()
         }
 
         // Observe ViewModel
         viewModel.signupSuccess.observe(viewLifecycleOwner) { success ->
             if (success) {
                 Toast.makeText(requireActivity(), "Signup successful!", Toast.LENGTH_SHORT).show()
-                findNavController().navigate(R.id.action_signupFragment_to_mainActivity)
+
+                val intent = Intent(requireContext(), MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    putExtra("IS_GUEST", false)
+                }
+                startActivity(intent)
+                requireActivity().finish()
             }
         }
 
@@ -158,10 +167,15 @@ class SignupFragment : Fragment() {
             }
         }
 
-        viewModel.googleSignInSuccess.observe(viewLifecycleOwner) { success ->
+        viewModel.googleSignUpSuccess.observe(viewLifecycleOwner) { success ->
             if (success) {
                 Toast.makeText(context, "Google login successful", Toast.LENGTH_SHORT).show()
-                findNavController().navigate(R.id.action_signupFragment_to_mainActivity)
+                val intent = Intent(requireContext(), MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    putExtra("IS_GUEST", false)
+                }
+                startActivity(intent)
+                requireActivity().finish()
             }
         }
 
@@ -199,15 +213,15 @@ class SignupFragment : Fragment() {
         confirmPasswordEditText.addTextChangedListener(textWatcher)
     }
 
-    private fun signInWithGoogle() {
+    private fun signUpWithGoogle() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
 
-        val googleSignInClient = GoogleSignIn.getClient(requireContext(), gso)
-        googleSignInClient.signOut().addOnCompleteListener {
-            googleSignInLauncher.launch(googleSignInClient.signInIntent)
+        val googleSignUpClient = GoogleSignIn.getClient(requireContext(), gso)
+        googleSignUpClient.signOut().addOnCompleteListener {
+            googleSignUpLauncher.launch(googleSignUpClient.signInIntent)
         }
     }
 }
