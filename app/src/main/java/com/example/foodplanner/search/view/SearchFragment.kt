@@ -39,7 +39,6 @@ import com.example.foodplanner.utils.NetworkUtils
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.firebase.auth.FirebaseAuth
-
 import android.app.AlertDialog
 
 class SearchFragment : Fragment() {
@@ -83,10 +82,22 @@ class SearchFragment : Fragment() {
     private var currentCategorySelection: String? = null
     private var isGuest: Boolean = false
 
+    companion object {
+        private const val KEY_SEARCH_TEXT = "search_text"
+        private const val KEY_SEARCH_TYPE = "search_type"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         isGuest = FirebaseAuth.getInstance().currentUser == null ||
                 requireActivity().intent.getBooleanExtra("IS_GUEST", false)
+
+        savedInstanceState?.let {
+            currentSearchType = it.getSerializable(KEY_SEARCH_TYPE) as? SearchViewModel.SearchType
+        }
+
+        currentSearchType = searchViewModel.getCurrentSearchType()
+        syncSelectionsWithViewModel()
     }
 
     override fun onCreateView(
@@ -102,11 +113,20 @@ class SearchFragment : Fragment() {
         initializeUi(view)
         initObservers()
         setupSearchListener()
-        updateChipText(null)
         navController = findNavController()
+
+        savedInstanceState?.let {
+            etSearch.setText(it.getString(KEY_SEARCH_TEXT))
+        }
+        updateChipText(null)
+
+        val query = etSearch.text.toString().trim()
+        if (searchViewModel.hasSelections() || query.isNotEmpty()) {
+            performSearch(query)
+        }
     }
 
-    // Initialize UI components and set up the RecyclerView adapter
+    // Initializes UI components and configures the RecyclerView with its adapter
     private fun initializeUi(view: View) {
         etSearch = view.findViewById(R.id.etSearch)
         cgSearchType = view.findViewById(R.id.cgSearchType)
@@ -116,6 +136,13 @@ class SearchFragment : Fragment() {
         chipIngredient = view.findViewById(R.id.chipIngredient)
         chipCategory = view.findViewById(R.id.chipCategory)
         noResultsTextView = view.findViewById(R.id.noResultsTextView)
+
+        chipCountry.isCloseIconVisible = searchViewModel.getSelectedCountry() != null
+        chipCountry.isChecked = searchViewModel.getSelectedCountry() != null
+        chipIngredient.isCloseIconVisible = searchViewModel.getSelectedIngredient() != null
+        chipIngredient.isChecked = searchViewModel.getSelectedIngredient() != null
+        chipCategory.isCloseIconVisible = searchViewModel.getSelectedCategory() != null
+        chipCategory.isChecked = searchViewModel.getSelectedCategory() != null
 
         chipCountry.isCloseIconVisible = false
         chipCountry.isChecked = false
@@ -147,7 +174,7 @@ class SearchFragment : Fragment() {
         }
     }
 
-    // Set up observers for search results
+    // Sets up observers to update the UI when search results change
     private fun initObservers() {
         searchViewModel.searchResults.observe(viewLifecycleOwner) { meals ->
             mealsAdapter.submitList(meals ?: emptyList())
@@ -174,76 +201,80 @@ class SearchFragment : Fragment() {
         }
     }
 
-    // Set up listeners for search input and filter chips
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_SEARCH_TEXT, etSearch.text.toString())
+        outState.putSerializable(KEY_SEARCH_TYPE, currentSearchType)
+        Log.d(
+            "SearchFragment",
+            "onSaveInstanceState called, Search text: ${etSearch.text}, Type: $currentSearchType"
+        )
+    }
+
+    // Syncs fragment's search type with the ViewModel's current selections
+    private fun syncSelectionsWithViewModel() {
+        val country = searchViewModel.getSelectedCountry()
+        val ingredient = searchViewModel.getSelectedIngredient()
+        val category = searchViewModel.getSelectedCategory()
+
+        if (country != null) {
+            currentSearchType = SearchViewModel.SearchType.COUNTRY
+        } else if (ingredient != null) {
+            currentSearchType = SearchViewModel.SearchType.INGREDIENT
+        } else if (category != null) {
+            currentSearchType = SearchViewModel.SearchType.CATEGORY
+        }
+        Log.d("SearchFragment", "Synced with ViewModel: Country=$country, Ingredient=$ingredient, Category=$category")
+    }
+
+    // Configures listeners for search input and filter chips
     private fun setupSearchListener() {
         etSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-            }
-
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val query = s.toString().trim()
                 if (query.isNotEmpty()) {
                     progressBar.visibility = View.VISIBLE
                     performSearch(query)
+                } else if (searchViewModel.hasSelections()) {
+                    progressBar.visibility = View.VISIBLE
+                    performSearch("")
                 } else {
-                    if (currentSearchType != null && (currentCountrySelection != null || currentIngredientSelection != null || currentCategorySelection != null)) {
-                        progressBar.visibility = View.VISIBLE
-                        performSearch("")
-                    } else {
-                        searchViewModel.resetSelections()
-                        mealsAdapter.submitList(emptyList())
-                        progressBar.visibility = View.GONE
-                        noResultsTextView.visibility = View.GONE
-                    }
+                    mealsAdapter.submitList(emptyList())
+                    progressBar.visibility = View.GONE
+                    noResultsTextView.visibility = View.GONE
                 }
             }
-
-            override fun afterTextChanged(s: Editable?) {
-            }
+            override fun afterTextChanged(s: Editable?) {}
         })
 
         chipCountry.setOnClickListener {
-            resetAllSelectionsExcept(SearchViewModel.SearchType.COUNTRY)
             currentSearchType = SearchViewModel.SearchType.COUNTRY
             showSuggestionsBottomSheet()
         }
 
         chipIngredient.setOnClickListener {
-            resetAllSelectionsExcept(SearchViewModel.SearchType.INGREDIENT)
             currentSearchType = SearchViewModel.SearchType.INGREDIENT
             showSuggestionsBottomSheet()
         }
 
         chipCategory.setOnClickListener {
-            resetAllSelectionsExcept(SearchViewModel.SearchType.CATEGORY)
             currentSearchType = SearchViewModel.SearchType.CATEGORY
             showSuggestionsBottomSheet()
         }
 
         chipCountry.setOnCloseIconClickListener {
             resetChip(chipCountry)
-            if (etSearch.text.toString().trim().isEmpty()) {
-                noResultsTextView.visibility = View.GONE
-            }
-            performSearch("")
         }
         chipIngredient.setOnCloseIconClickListener {
             resetChip(chipIngredient)
-            if (etSearch.text.toString().trim().isEmpty()) {
-                noResultsTextView.visibility = View.GONE
-            }
-            performSearch("")
         }
         chipCategory.setOnCloseIconClickListener {
             resetChip(chipCategory)
-            if (etSearch.text.toString().trim().isEmpty()) {
-                noResultsTextView.visibility = View.GONE
-            }
-            performSearch("")
         }
     }
 
-    // Perform search with internet availability check
+    // Performs a search after checking internet availability
     private fun performSearchWithInternetCheck(query: String) {
         if (NetworkUtils.isInternetAvailable(requireContext())) {
             progressBar.visibility = View.VISIBLE
@@ -254,7 +285,7 @@ class SearchFragment : Fragment() {
         }
     }
 
-    // Show a dialog when there is no internet connection
+    // Displays a dialog when there’s no internet connection
     private fun showNoInternetDialog() {
         CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOk(
             context = requireContext(),
@@ -265,58 +296,52 @@ class SearchFragment : Fragment() {
         )
     }
 
-    // Perform search based on the query and current search type
+    // Triggers a search with the given query and current search type
     private fun performSearch(query: String) {
         searchViewModel.searchMealsByName(query, currentSearchType)
     }
 
-    // Reset all filter selections except the specified type
     private fun resetAllSelectionsExcept(exceptType: SearchViewModel.SearchType) {
         if (exceptType != SearchViewModel.SearchType.COUNTRY) {
-            currentCountrySelection = null
+            searchViewModel.setSelectedCategory(SearchViewModel.SearchType.COUNTRY, null)
             chipCountry.isChecked = false
             chipCountry.isCloseIconVisible = false
         }
         if (exceptType != SearchViewModel.SearchType.INGREDIENT) {
-            currentIngredientSelection = null
+            searchViewModel.setSelectedCategory(SearchViewModel.SearchType.INGREDIENT, null)
             chipIngredient.isChecked = false
             chipIngredient.isCloseIconVisible = false
         }
         if (exceptType != SearchViewModel.SearchType.CATEGORY) {
-            currentCategorySelection = null
+            searchViewModel.setSelectedCategory(SearchViewModel.SearchType.CATEGORY, null)
             chipCategory.isChecked = false
             chipCategory.isCloseIconVisible = false
         }
         updateChipText(null)
     }
 
-    // Reset the specified chip and clear its selection
+    // Resets a specific chip and clears its selection
     private fun resetChip(chip: Chip) {
         when (chip.id) {
-            R.id.chipCountry -> {
-                currentCountrySelection = null
-                chip.isChecked = false
-            }
-            R.id.chipIngredient -> {
-                currentIngredientSelection = null
-                chip.isChecked = false
-            }
-            R.id.chipCategory -> {
-                currentCategorySelection = null
-                chip.isChecked = false
-            }
+            R.id.chipCountry -> searchViewModel.setSelectedCategory(SearchViewModel.SearchType.COUNTRY, null)
+            R.id.chipIngredient -> searchViewModel.setSelectedCategory(SearchViewModel.SearchType.INGREDIENT, null)
+            R.id.chipCategory -> searchViewModel.setSelectedCategory(SearchViewModel.SearchType.CATEGORY, null)
         }
         currentSearchType = null
         updateChipText(null)
         chip.isCloseIconVisible = false
-        searchViewModel.resetSelections()
+        if (etSearch.text.toString().trim().isEmpty()) {
+            mealsAdapter.submitList(emptyList())
+            noResultsTextView.visibility = View.GONE
+        }
+        performSearch("")
     }
 
-    // Show a bottom sheet for selecting search suggestions
+    // Displays a bottom sheet for selecting search suggestions and handles the result
     private fun showSuggestionsBottomSheet() {
-        val previousCountrySelection = currentCountrySelection
-        val previousIngredientSelection = currentIngredientSelection
-        val previousCategorySelection = currentCategorySelection
+        val currentCountrySelectionBefore = searchViewModel.getSelectedCountry()
+        val currentIngredientSelectionBefore = searchViewModel.getSelectedIngredient()
+        val currentCategorySelectionBefore = searchViewModel.getSelectedCategory()
 
         if (!NetworkUtils.isInternetAvailable(requireContext())) {
             showNoInternetDialog()
@@ -359,96 +384,68 @@ class SearchFragment : Fragment() {
                     }
                 }
             } else {
-                when (currentSearchType) {
-                    SearchViewModel.SearchType.COUNTRY -> {
-                        if (previousCountrySelection != null) {
-                            currentCountrySelection = previousCountrySelection
-                            chipCountry.isChecked = true
-                            chipCountry.isCloseIconVisible = true
-                            chipCountry.text = previousCountrySelection
-                            searchViewModel.setSelectedCategory(SearchViewModel.SearchType.COUNTRY, previousCountrySelection)
-                            progressBar.visibility = View.VISIBLE
-                            performSearch("")
-                        } else {
-                            currentCountrySelection = null
-                            chipCountry.isChecked = false
-                            chipCountry.isCloseIconVisible = false
-                            chipCountry.text = "Country"
-                            searchViewModel.resetSelections()
-                            mealsAdapter.submitList(emptyList())
-                        }
-                    }
-                    SearchViewModel.SearchType.INGREDIENT -> {
-                        if (previousIngredientSelection != null) {
-                            currentIngredientSelection = previousIngredientSelection
-                            chipIngredient.isChecked = true
-                            chipIngredient.isCloseIconVisible = true
-                            chipIngredient.text = previousIngredientSelection
-                            searchViewModel.setSelectedCategory(SearchViewModel.SearchType.INGREDIENT, previousIngredientSelection)
-                            progressBar.visibility = View.VISIBLE
-                            performSearch("")
-                        } else {
-                            currentIngredientSelection = null
-                            chipIngredient.isChecked = false
-                            chipIngredient.isCloseIconVisible = false
-                            chipIngredient.text = "Ingredient"
-                            searchViewModel.resetSelections()
-                            mealsAdapter.submitList(emptyList())
-                        }
-                    }
-                    SearchViewModel.SearchType.CATEGORY -> {
-                        if (previousCategorySelection != null) {
-                            currentCategorySelection = previousCategorySelection
-                            chipCategory.isChecked = true
-                            chipCategory.isCloseIconVisible = true
-                            chipCategory.text = previousCategorySelection
-                            searchViewModel.setSelectedCategory(SearchViewModel.SearchType.CATEGORY, previousCategorySelection)
-                            progressBar.visibility = View.VISIBLE
-                            performSearch("")
-                        } else {
-                            currentCategorySelection = null
-                            chipCategory.isChecked = false
-                            chipCategory.isCloseIconVisible = false
-                            chipCategory.text = "Category"
-                            searchViewModel.resetSelections()
-                            mealsAdapter.submitList(emptyList())
-                        }
-                    }
-                    else -> {
-                    }
+                currentCountrySelection = currentCountrySelectionBefore
+                currentIngredientSelection = currentIngredientSelectionBefore
+                currentCategorySelection = currentCategorySelectionBefore
+
+                chipCountry.isChecked = currentCountrySelection != null
+                chipCountry.isCloseIconVisible = currentCountrySelection != null
+                chipCountry.text = currentCountrySelection ?: "Country"
+
+                chipIngredient.isChecked = currentIngredientSelection != null
+                chipIngredient.isCloseIconVisible = currentIngredientSelection != null
+                chipIngredient.text = currentIngredientSelection ?: "Ingredient"
+
+                chipCategory.isChecked = currentCategorySelection != null
+                chipCategory.isCloseIconVisible = currentCategorySelection != null
+                chipCategory.text = currentCategorySelection ?: "Category"
+
+                currentSearchType = when {
+                    currentCountrySelection != null -> SearchViewModel.SearchType.COUNTRY
+                    currentIngredientSelection != null -> SearchViewModel.SearchType.INGREDIENT
+                    currentCategorySelection != null -> SearchViewModel.SearchType.CATEGORY
+                    else -> null
                 }
-                progressBar.visibility = View.GONE
+
+                if (searchViewModel.hasSelections()) {
+                    progressBar.visibility = View.VISIBLE
+                    performSearch("")
+                } else {
+                    progressBar.visibility = View.GONE
+                    mealsAdapter.submitList(emptyList())
+                    noResultsTextView.visibility = View.GONE
+                }
             }
+            Log.d("SearchFragment", "Final state: Country=${searchViewModel.getSelectedCountry()}, Ingredient=${searchViewModel.getSelectedIngredient()}, Category=${searchViewModel.getSelectedCategory()}, SearchType=$currentSearchType")
         }
         bottomSheet.show(childFragmentManager, SuggestionsBottomSheet.TAG)
     }
 
-    // Update the text and state of filter chips based on selections
+    // Updates the text and state of chips based on current selections
     private fun updateChipText(selectedSuggestion: String?) {
-        val countryText = currentCountrySelection ?: "Country"
-        val ingredientText = currentIngredientSelection ?: "Ingredient"
-        val categoryText = currentCategorySelection ?: "Category"
+        val countryText = searchViewModel.getSelectedCountry() ?: "Country"
+        val ingredientText = searchViewModel.getSelectedIngredient() ?: "Ingredient"
+        val categoryText = searchViewModel.getSelectedCategory() ?: "Category"
 
         chipCountry.text = countryText
-        chipCountry.isCloseIconVisible = currentCountrySelection != null
-        chipCountry.isChecked = currentCountrySelection != null
+        chipCountry.isCloseIconVisible = searchViewModel.getSelectedCountry() != null
+        chipCountry.isChecked = searchViewModel.getSelectedCountry() != null
 
         chipIngredient.text = ingredientText
-        chipIngredient.isCloseIconVisible = currentIngredientSelection != null
-        chipIngredient.isChecked = currentIngredientSelection != null
+        chipIngredient.isCloseIconVisible = searchViewModel.getSelectedIngredient() != null
+        chipIngredient.isChecked = searchViewModel.getSelectedIngredient() != null
 
         chipCategory.text = categoryText
-        chipCategory.isCloseIconVisible = currentCategorySelection != null
-        chipCategory.isChecked = currentCategorySelection != null
+        chipCategory.isCloseIconVisible = searchViewModel.getSelectedCategory() != null
+        chipCategory.isChecked = searchViewModel.getSelectedCategory() != null
     }
 
-    // Hide the soft keyboard
+    // Hides the soft keyboard after search input
     private fun hideKeyboard() {
         val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
         imm?.hideSoftInputFromWindow(etSearch.windowToken, 0)
     }
 
-    // Navigate to meal details screen with the given meal ID
     private fun goToDetails(id: String) {
         if (isGuest) {
             CreateMaterialAlertDialogBuilder.createGuestLoginDialog(requireContext())
@@ -459,7 +456,6 @@ class SearchFragment : Fragment() {
         }
     }
 
-    // Handle adding a meal to the plan with guest restrictions
     private fun handleAddToPlanClick(meal: Meal) {
         if (isGuest) {
             CreateMaterialAlertDialogBuilder.createGuestLoginDialog(requireContext())
@@ -468,7 +464,6 @@ class SearchFragment : Fragment() {
         }
     }
 
-    // Show a dialog to select a day for adding a meal to the plan
     private fun showAddToPlanDialog(meal: Meal) {
         Log.d("SearchFragment", "Showing day selection dialog for meal: ${meal.strMeal}")
         val days = arrayOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
@@ -481,19 +476,5 @@ class SearchFragment : Fragment() {
             }
             .setNegativeButton("Cancel", null)
             .show()
-    }
-
-    // Show a dialog for guest restrictions with an option to log in
-    private fun showGuestRestrictionDialog(message: String) {
-        CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel(
-            context = requireContext(),
-            title = "Restricted Action",
-            message = message,
-            positiveBtnMsg = "Log In",
-            negativeBtnMsg = "Cancel",
-            positiveBtnFun = {
-                findNavController().navigate(R.id.action_search_to_authActivity)
-            }
-        )
     }
 }

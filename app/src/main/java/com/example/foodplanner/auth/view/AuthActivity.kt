@@ -11,7 +11,6 @@ import androidx.navigation.fragment.NavHostFragment
 import com.example.foodplanner.R
 import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder
 import com.example.foodplanner.main.view.MainActivity
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 
 class AuthActivity : AppCompatActivity() {
@@ -28,10 +27,8 @@ class AuthActivity : AppCompatActivity() {
         // Read guest status from Intent
         isGuest = intent.getBooleanExtra("IS_GUEST", false)
 
-
         // Initialize NavHostFragment and NavController
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
-
         navController = (navHostFragment as NavHostFragment).navController
 
         auth = FirebaseAuth.getInstance()
@@ -51,6 +48,7 @@ class AuthActivity : AppCompatActivity() {
         return navController.navigateUp() || super.onSupportNavigateUp()
     }
 
+    // Handles the back button press with a dialog to exit or continue as guest
     override fun onBackPressed() {
         if (navController.popBackStack()) {
             return
@@ -60,7 +58,8 @@ class AuthActivity : AppCompatActivity() {
             context = this,
             onExit = {
                 Toast.makeText(this, "Exiting the app", Toast.LENGTH_SHORT).show()
-                super.onBackPressed()
+                super.onBackPressed() // Call the super implementation as required
+                finishAffinity() // Ensure the app closes completely
             },
             onContinueAsGuest = {
                 val intent = Intent(this, MainActivity::class.java).apply {
@@ -75,8 +74,7 @@ class AuthActivity : AppCompatActivity() {
                     try {
                         navController.navigate(R.id.loginFragment)
                     } catch (e: IllegalStateException) {
-                        Toast.makeText(this,"Failed to reset to LoginFragment: ${e.message}",Toast.LENGTH_SHORT).show()
-
+                        Toast.makeText(this, "Failed to reset to LoginFragment: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }

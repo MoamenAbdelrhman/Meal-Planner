@@ -56,12 +56,11 @@ object CreateMaterialAlertDialogBuilder {
         onContinueAsGuest: () -> Unit,
         onCancel: (() -> Unit)? = null
     ) {
-
         val messageText = TextView(context).apply {
             text = "Do you want to exit the app or continue as a guest?"
             textSize = 16f
             setTextColor(ContextCompat.getColor(context, android.R.color.black))
-            setPadding(46,46,46,46)
+            setPadding(46, 46, 46, 46)
         }
 
         val dialog = MaterialAlertDialogBuilder(context)
@@ -106,12 +105,11 @@ object CreateMaterialAlertDialogBuilder {
     }
 
     fun createGuestLoginDialog(context: Context) {
-
         val messageTextView = TextView(context).apply {
             text = "You need to log in to access this feature."
             textSize = 16f
             setTextColor(ContextCompat.getColor(context, android.R.color.black))
-            setPadding(46,46,46,46)
+            setPadding(46, 46, 46, 46)
         }
 
         val dialog = MaterialAlertDialogBuilder(context)
@@ -153,7 +151,59 @@ object CreateMaterialAlertDialogBuilder {
         }
     }
 
+    fun createConfirmationDialog(
+        context: Context,
+        message: String,
+        positiveBtnMsg: String,
+        negativeBtnMsg: String,
+        positiveAction: () -> Unit,
+        negativeAction: (() -> Unit)? = null
+    ) {
+        val messageTextView = TextView(context).apply {
+            text = message
+            textSize = 16f
+            setTextColor(ContextCompat.getColor(context, android.R.color.black))
+            setPadding(46, 46, 46, 46)
+        }
 
+        val dialog = MaterialAlertDialogBuilder(context)
+            .setView(messageTextView)
+            .setPositiveButton(positiveBtnMsg, null)
+            .setNegativeButton(negativeBtnMsg, null)
+            .setCancelable(true)
+            .create()
+
+        dialog.show()
+
+        dialog.window?.setBackgroundDrawable(ContextCompat.getDrawable(context, R.drawable.dialog_background))
+        val widthInDp = 300
+        val scale = context.resources.displayMetrics.density
+        val widthInPixels = (widthInDp * scale + 0.5f).toInt()
+        dialog.window?.setLayout(widthInPixels, WindowManager.LayoutParams.WRAP_CONTENT)
+
+        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)?.let { positiveButton ->
+            positiveButton.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.mycolor))
+            positiveButton.setTextColor(ContextCompat.getColor(context, android.R.color.white))
+            positiveButton.setPadding(32, 16, 32, 16)
+            positiveButton.textSize = 16f
+            positiveButton.setOnClickListener {
+                positiveAction()
+                dialog.dismiss()
+            }
+        }
+
+        dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)?.let { negativeButton ->
+            negativeButton.setBackgroundTintList(ContextCompat.getColorStateList(context, android.R.color.transparent))
+            negativeButton.setTextColor(ContextCompat.getColor(context, R.color.black))
+            negativeButton.setBackgroundResource(R.drawable.outlined_button_background)
+            negativeButton.setPadding(32, 16, 32, 16)
+            negativeButton.textSize = 14f
+            negativeButton.setOnClickListener {
+                negativeAction?.invoke()
+                dialog.dismiss()
+            }
+        }
+    }
 
     fun createConfirmRemovalDialog(
         context: Context,
@@ -193,7 +243,7 @@ object CreateMaterialAlertDialogBuilder {
             negativeButton.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.mycolor))
             negativeButton.setTextColor(ContextCompat.getColor(context, R.color.white))
             negativeButton.setPadding(32, 16, 32, 16)
-            negativeButton.textSize=14f
+            negativeButton.textSize = 14f
             negativeButton.setOnClickListener {
                 negativeAction()
                 dialog.dismiss()

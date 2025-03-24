@@ -153,7 +153,7 @@
                             android:layout_margin="4dp"
                             android:ellipsize="end"
                             android:maxLines="2"
-                            android:text="Mexican Grilled Salmon with Avocado Salsa"
+                            android:text=""
                             android:textAlignment="center"
                             android:textColor="@color/black"
                             android:textSize="20sp"
@@ -165,7 +165,7 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
                             android:layout_margin="4dp"
-                            android:text="Vegetarian"
+                            android:text=""
                             android:textColor="@color/black"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -176,7 +176,7 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
                             android:layout_margin="4dp"
-                            android:text="Italian"
+                            android:text=""
                             android:textColor="@color/black"
                             android:textSize="18sp"
                             android:textStyle="bold" />

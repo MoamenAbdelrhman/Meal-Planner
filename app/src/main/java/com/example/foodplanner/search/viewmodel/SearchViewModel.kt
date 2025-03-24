@@ -31,6 +31,7 @@ class SearchViewModel(private val mealRepository: MealRepository) : ViewModel() 
         loadSuggestions()
     }
 
+    // Loads initial suggestions (countries, categories, ingredients) from the repository
     fun loadSuggestions() {
         viewModelScope.launch {
             try {
@@ -67,13 +68,14 @@ class SearchViewModel(private val mealRepository: MealRepository) : ViewModel() 
                 }
                 Log.d("SearchViewModel", "Ingredients loaded: ${ingredients.size}")
 
-                _suggestions.value = countries // الافتراضي هو الدول
+                _suggestions.value = countries // Default to countries
             } catch (e: Exception) {
                 Log.e("SearchViewModel", "Error loading suggestions: ${e.message}")
             }
         }
     }
 
+    // Updates the suggestions list based on the selected search type (country, ingredient, category)
     fun updateSuggestions(searchType: SearchType, context: android.content.Context) {
         Log.d("SearchViewModel", "Updating suggestions for: $searchType")
         if (!NetworkUtils.isInternetAvailable(context)) {
@@ -95,6 +97,7 @@ class SearchViewModel(private val mealRepository: MealRepository) : ViewModel() 
         Log.d("SearchViewModel", "New suggestions size: ${_suggestions.value?.size}")
     }
 
+    // Filters suggestions based on the user's query input
     fun filterSuggestions(query: String, searchType: SearchType) {
         val allSuggestions = when (searchType) {
             SearchType.COUNTRY -> countries
@@ -111,6 +114,7 @@ class SearchViewModel(private val mealRepository: MealRepository) : ViewModel() 
         }
     }
 
+    // Searches for meals based on the query and the current search type
     fun searchMealsByName(query: String, searchType: SearchType? = null) {
         viewModelScope.launch {
             try {
@@ -161,7 +165,8 @@ class SearchViewModel(private val mealRepository: MealRepository) : ViewModel() 
         }
     }
 
-    fun setSelectedCategory(type: SearchType, value: String) {
+    // Sets the selected filter (country, ingredient, or category) and clears others
+    fun setSelectedCategory(type: SearchType, value: String?) {
         when (type) {
             SearchType.COUNTRY -> {
                 selectedCountry = value
@@ -182,12 +187,32 @@ class SearchViewModel(private val mealRepository: MealRepository) : ViewModel() 
         Log.d("SearchViewModel", "Selected category updated: Country=$selectedCountry, Ingredient=$selectedIngredient, Category=$selectedCategory")
     }
 
+    // Resets all selections and clears search results
     fun resetSelections() {
         selectedCountry = null
         selectedIngredient = null
         selectedCategory = null
         _searchResults.value = emptyList()
         Log.d("SearchViewModel", "All selections reset")
+    }
+
+    fun getSelectedCountry(): String? = selectedCountry
+    fun getSelectedIngredient(): String? = selectedIngredient
+    fun getSelectedCategory(): String? = selectedCategory
+
+    // Returns the current active search type based on selections
+    fun getCurrentSearchType(): SearchType? {
+        return when {
+            selectedCountry != null -> SearchType.COUNTRY
+            selectedIngredient != null -> SearchType.INGREDIENT
+            selectedCategory != null -> SearchType.CATEGORY
+            else -> null
+        }
+    }
+
+    // Checks if there are any active selections
+    fun hasSelections(): Boolean {
+        return selectedCountry != null || selectedIngredient != null || selectedCategory != null
     }
 
     enum class SearchType {

@@ -30,7 +30,7 @@ import com.example.foodplanner.core.model.local.source.UserDatabase
 import com.example.foodplanner.core.model.remote.Response
 import com.example.foodplanner.core.model.remote.repository.MealRepositoryImpl
 import com.example.foodplanner.core.model.remote.source.RemoteGsonDataImpl
-import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder.createMaterialAlertDialogBuilderOkCancel
+import com.example.foodplanner.core.util.CreateMaterialAlertDialogBuilder
 import com.example.foodplanner.core.viewmodel.DataViewModel
 import com.example.foodplanner.core.viewmodel.DataViewModelFactory
 import com.example.foodplanner.main.viewModel.MainActivityViewModel
@@ -182,7 +182,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
 //                R.id.mealsFragment,
-                 R.id.action_details -> {
+                R.id.action_details -> {
                     bottomNavigationView.visibility = View.GONE
                 }
 
@@ -231,37 +231,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             R.id.action_log_out -> {
-                createMaterialAlertDialogBuilderOkCancel(
+                CreateMaterialAlertDialogBuilder.createConfirmationDialog(
                     context = this,
-                    title = "Log Out",
                     message = "Are you sure you want to log out?",
                     positiveBtnMsg = "Log Out",
                     negativeBtnMsg = "Cancel",
-                    positiveBtnFun = {
+                    positiveAction = {
                         authViewModel.logOut()
                         authViewModel.loggedOut.observe(this) { response ->
                             when (response) {
                                 is Response.Loading -> {
-                                    Toast.makeText(this, "Logging out...", Toast.LENGTH_SHORT)
-                                        .show()
+                                    Toast.makeText(this, "Logging out...", Toast.LENGTH_SHORT).show()
                                 }
 
                                 is Response.Success -> {
-                                    Toast.makeText(
-                                        this,
-                                        "Logged out successfully",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
                                     isGuest = true
                                     navigateToAuthActivity(clearTask = true, isGuest = true)
                                 }
 
                                 is Response.Failure -> {
-                                    Toast.makeText(
-                                        this,
-                                        "Failed to log out: ${response.reason}",
-                                        Toast.LENGTH_LONG
-                                    ).show()
+                                    Toast.makeText(this, "Failed to log out: ${response.reason}", Toast.LENGTH_LONG).show()
                                 }
 
                                 else -> {}
@@ -273,16 +263,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             R.id.action_delete_account -> {
-                createMaterialAlertDialogBuilderOkCancel(
+                CreateMaterialAlertDialogBuilder.createConfirmationDialog(
                     context = this,
-                    title = "Delete Account",
-                    message = "This action will permanently delete your account. Are you sure you want to continue?",
+                    message = "This action will permanently delete your account and all associated data. Are you sure you want to continue?",
                     positiveBtnMsg = "Delete",
                     negativeBtnMsg = "Cancel",
-                    positiveBtnFun = {
+                    positiveAction = {
                         val userId = auth.currentUser?.uid ?: run {
                             Toast.makeText(this, "No user is signed in", Toast.LENGTH_SHORT).show()
-                            return@createMaterialAlertDialogBuilderOkCancel
+                            return@createConfirmationDialog
                         }
                         // Clear meal plans first
                         mealPlanViewModel.clearMealPlanForUser(userId)
@@ -297,19 +286,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                         authViewModel.deletedAccount.observe(this) { response ->
                                             when (response) {
                                                 is Response.Loading -> {
-                                                    Toast.makeText(
-                                                        this,
-                                                        "Deleting account...",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
+                                                    Toast.makeText(this, "Deleting account...", Toast.LENGTH_SHORT).show()
                                                 }
 
                                                 is Response.Success -> {
-                                                    Toast.makeText(
-                                                        this,
-                                                        "Account deleted successfully",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
+                                                    Toast.makeText(this, "Account deleted successfully", Toast.LENGTH_SHORT).show()
                                                     isGuest = true
                                                     auth.removeAuthStateListener(authStateListener)
                                                     authStateHandler.removeCallbacksAndMessages(null)
@@ -317,30 +298,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                                 }
 
                                                 is Response.Failure -> {
-                                                    Toast.makeText(
-                                                        this,
-                                                        "Failed to delete account: ${response.reason}",
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
+                                                    Toast.makeText(this, "Failed to delete account: ${response.reason}", Toast.LENGTH_LONG).show()
                                                 }
 
                                                 else -> {}
                                             }
                                         }
                                     } else {
-                                        Toast.makeText(
-                                            this,
-                                            "Failed to clear favorites",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        Toast.makeText(this, "Failed to clear favorites", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             } else {
-                                Toast.makeText(
-                                    this,
-                                    "Failed to clear meal plans",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                Toast.makeText(this, "Failed to clear meal plans", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
