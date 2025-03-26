@@ -1,6 +1,9 @@
 # Meal Planner 🍽️
 
-![Meal Planner Banner](https://your-image-link.com/banner.png)  
+<img src="https://github.com/MoamenAbdelrhman/Meal-Planner/blob/master/mylogo.png.png" width="20%">
+
+
+![Meal Planner Banner]
 _A complete solution for meal planning and recipe discovery._
 
 ## 📌 Overview
