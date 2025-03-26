@@ -39,11 +39,32 @@ Meal Planner is an Android application designed to help users plan their weekly 
 4. **Run the application** on an emulator or a physical device.
 
 ## 📸 Screenshots
-![Home Screen](https://github.com/MoamenAbdelrhman/Meal-Planner/blob/master/WhatsApp%20Image%202025-03-26%20at%2016.27.08_3f3a34d7.jpg)
-![Meal Search](https://github.com/MoamenAbdelrhman/Meal-Planner/blob/master/WhatsApp%20Image%202025-03-26%20at%2016.27.09_48ac8e48.jpg)
-![Meal Details](https://github.com/MoamenAbdelrhman/Meal-Planner/blob/master/photo_2025-03-26_17-53-12.jpg)
-![Meal Meal_PLan](https://github.com/MoamenAbdelrhman/Meal-Planner/blob/master/WhatsApp%20Image%202025-03-26%20at%2017.35.08_1b268352.jpg)
-![Meal Favorites](https://github.com/MoamenAbdelrhman/Meal-Planner/blob/master/WhatsApp%20Image%202025-03-26%20at%2017.35.08_dec4fe1e.jpg)
+
+<table>
+  <tr>
+    <td align="center"><b>🏠 Home Screen</b></td>
+    <td align="center"><b>🔍 Meal Search</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/MoamenAbdelrhman/Meal-Planner/blob/master/WhatsApp%20Image%202025-03-26%20at%2016.27.08_3f3a34d7.jpg" width="45%"/></td>
+    <td align="center"><img src="https://github.com/MoamenAbdelrhman/Meal-Planner/blob/master/WhatsApp%20Image%202025-03-26%20at%2016.27.09_48ac8e48.jpg" width="45%"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>🍽️ Meal Details</b></td>
+    <td align="center"><b>🗓️ Meal Plan</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/MoamenAbdelrhman/Meal-Planner/blob/master/photo_2025-03-26_17-53-12.jpg" width="45%"/></td>
+    <td align="center"><img src="https://github.com/MoamenAbdelrhman/Meal-Planner/blob/master/WhatsApp%20Image%202025-03-26%20at%2017.35.08_1b268352.jpg" width="45%"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>❤️ Meal Favorites</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/MoamenAbdelrhman/Meal-Planner/blob/master/WhatsApp%20Image%202025-03-26%20at%2017.35.08_dec4fe1e.jpg" width="45%"/></td>
+  </tr>
+</table>
+
 
 ## 📚 API Reference
 The app fetches meal data from [TheMealDB API](https://themealdb.com/api.php).
